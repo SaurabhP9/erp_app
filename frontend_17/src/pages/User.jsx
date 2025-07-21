@@ -334,7 +334,7 @@ export default function User() {
         <TableContainer
           component={Paper}
           sx={{
-            maxHeight: "50vh", // 💡 Use viewport height for better responsiveness
+            maxHeight: "40vh", // 💡 Use viewport height for better responsiveness
             overflowY: "auto",
             backgroundColor: "#f9f9f9",
             border: 1,

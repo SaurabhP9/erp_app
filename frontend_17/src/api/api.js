@@ -1,27 +1,27 @@
-// // api.js
-// import axios from "axios";
+// api.js
+import axios from "axios";
 
-// export const BASE_URL = "http://localhost:5050";
+export const BASE_URL = "http://localhost:5050";
 
-// const api = axios.create({
-//   baseURL: BASE_URL,
-//   headers: {
-//     "Content-Type": "application/json",
-//   },
-// });
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
-// api.interceptors.request.use(
-//   (config) => {
-//     const token = localStorage.getItem("token");
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//     return config;
-//   },
-//   (error) => Promise.reject(error)
-// );
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// export default api;
+export default api;
 
 // // // api.js
 // // import axios from "axios";
@@ -53,31 +53,31 @@
 
 // // export default api;
 
-// api.js
-import axios from "axios";
+// // api.js
+// import axios from "axios";
 
-// This is the CRITICAL CHANGE:
-export const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL;
+// // This is the CRITICAL CHANGE:
+// export const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL;
 
-// You can add a console log here to verify it during development/build
-console.log("API Base URL used:", BASE_URL);
+// // You can add a console log here to verify it during development/build
+// console.log("API Base URL used:", BASE_URL);
 
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+// const api = axios.create({
+//   baseURL: BASE_URL,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
 
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// api.interceptors.request.use(
+//   (config) => {
+//     const token = localStorage.getItem("token");
+//     if (token) {
+//       config.headers.Authorization = `Bearer ${token}`;
+//     }
+//     return config;
+//   },
+//   (error) => Promise.reject(error)
+// );
 
-export default api;
+// export default api;
