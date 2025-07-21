@@ -1,0 +1,57 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Frontend build output
+frontend_17/dist/   # For Vite build output
+frontend_17/build/  # For Create React App build output
+
+# Backend upload directory (if files are saved there)
+backend_17/uploads/
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm/
+.pnpm/
+.yarn/
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Operating System Files
+.DS_Store          # macOS
+Thumbs.db          # Windows
+ehthumbs.db        # Windows
+Desktop.ini        # Windows
+.Spotlight-V100    # macOS
+
+# IDE and Editor Files
+.vscode/           # VS Code (if you don't want to share settings)
+.idea/             # IntelliJ IDEA / WebStorm
+*.iml              # IntelliJ IDEA
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# npm package manager cache
+.npm/
+
+# Miscellaneous
+coverage/          # Test coverage reports
+*.sqlite
+*.sqlite3
+.history/          # VS Code local history
