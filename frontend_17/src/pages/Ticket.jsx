@@ -132,13 +132,23 @@ const Ticket = () => {
 
   const [showMyHandovers, setShowMyHandovers] = useState(false);
 
+  // const cellStyle = {
+  //   border: "1px solid #ccc",
+  //   fontSize: "0.78rem",
+  //   textAlign: "left",
+  //   padding: "4px 8px",
+  //   lineHeight: "1.3",
+  //   whiteSpace: "nowrap",
+  //   overflow: "hidden",
+  //   textOverflow: "ellipsis",
+  // };
+
   const cellStyle = {
-    border: "1px solid #ccc",
-    fontSize: "0.85rem",
+    border: "1px solid #ddd",
+    fontSize: "0.95rem",
     textAlign: "center",
-    padding: "6px",
+    padding: "10px",
     wordBreak: "break-word",
-    py: 0.5,
   };
 
   const exportToExcel = () => {
@@ -843,8 +853,20 @@ const Ticket = () => {
                 backgroundColor: "#f9f9f9",
               }}
             >
-              <TableContainer sx={{ flexGrow: 1, overflowY: "auto" }}>
-                <Table stickyHeader sx={{ tableLayout: "auto", width: "140%" }}>
+              {/* <TableContainer sx={{ flexGrow: 1, overflowY: "auto" }}> */}
+              <TableContainer
+                sx={{ flexGrow: 1, overflowY: "auto", overflowX: "auto" }}
+              >
+                {/* <Table stickyHeader sx={{ tableLayout: "auto", width: "140%" }}> */}
+                <Table
+                  stickyHeader
+                  sx={{
+                    tableLayout: "auto",
+                    width: "140%",
+                    borderCollapse: "collapse",
+                    border: "1px solid #ddd",
+                  }}
+                >
                   <TableHead>
                     <TableRow>
                       {[
@@ -863,15 +885,35 @@ const Ticket = () => {
                         <TableCell
                           key={idx}
                           sx={{
-                            backgroundColor: "grey", // grey shade
+                            backgroundColor: "grey",
                             color: "white",
                             fontWeight: "bold",
-                            border: 1,
+                            border: "1px solid #ddd",
                             textAlign: "center",
                             whiteSpace: "normal",
                             wordBreak: "break-word",
-                            fontSize: "0.9rem",
+                            fontSize: "0.95rem",
                             cursor: "pointer",
+                            width:
+                              idx === 0
+                                ? "3px"
+                                : idx === 1
+                                ? "10px"
+                                : idx === 2
+                                ? "50px"
+                                : idx === 3
+                                ? "35px"
+                                : idx === 4
+                                ? "200px"
+                                : idx === 5 || idx === 6
+                                ? "25px"
+                                : idx === 8
+                                ? "15px"
+                                : idx === 7 || idx === 9
+                                ? "25px"
+                                : idx === 10
+                                ? "15px"
+                                : "auto",
                           }}
                         >
                           {label}
