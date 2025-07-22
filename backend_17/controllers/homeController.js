@@ -24,7 +24,7 @@ exports.getHomeSummary = async (req, res) => {
           closed: empTickets.filter((t) => t.mainStatus === "closed").length,
           handover: empTickets.filter((t) => t.mainStatus === "handover")
             .length,
-          inProgress: empTickets.filter((t) => t.mainStatus === "inProcess")
+          inProcess: empTickets.filter((t) => t.mainStatus === "inProcess")
             .length,
           // working: empTickets.filter((t) => t.mainStatus === "working").length,
         };
@@ -33,15 +33,15 @@ exports.getHomeSummary = async (req, res) => {
           employeeId: emp._id,
           name: emp.name,
           email: emp.email,
-          project: emp.projectId,
           ticketStatus,
         };
       })
     );
 
     const users = await User.find();
+    const filterUser = users.filter((u) => u.role !== "employee");
     const userSummary = await Promise.all(
-      users.map(async (user) => {
+      filterUser.map(async (user) => {
         const userTickets = allTickets.filter(
           (t) => t.userId?.toString() === user._id.toString()
         );
@@ -51,7 +51,7 @@ exports.getHomeSummary = async (req, res) => {
           closed: userTickets.filter((t) => t.mainStatus === "closed").length,
           handover: userTickets.filter((t) => t.mainStatus === "handover")
             .length,
-          inProgress: userTickets.filter((t) => t.mainStatus === "inProcess")
+          inProcess: userTickets.filter((t) => t.mainStatus === "inProcess")
             .length,
         };
 
@@ -59,7 +59,6 @@ exports.getHomeSummary = async (req, res) => {
           userId: user._id,
           name: user.name,
           email: user.email,
-          project: user.projectId,
           ticketStatus,
         };
       })

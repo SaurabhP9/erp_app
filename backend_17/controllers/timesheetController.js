@@ -87,8 +87,6 @@ exports.getTimesheetForUser = async (req, res) => {
       userId: userId,
     }).populate("employee");
 
-    console.log("ticket for user ", tickets);
-
     const timesheetData = tickets.map((ticket) => {
       const employeeName = ticket.employee || "Unknown";
       const createdTime = ticket.createdTime
@@ -147,8 +145,6 @@ exports.getTimesheetForEmployee = async (req, res) => {
       employeeId: empId,
     }).populate("employee");
 
-    console.log("ticket for Empl ", tickets);
-
     const timesheetData = tickets.map((ticket) => {
       const employeeName = ticket.employee || "Unknown";
       const createdTime = ticket.createdTime
@@ -169,7 +165,6 @@ exports.getTimesheetForEmployee = async (req, res) => {
             console.warn("Invalid updatedTime, falling back to current time");
             endTime = new Date();
           }
-          console.log(ticket.createdTime, "ticket", ticket.employee, endTime);
         } else {
           endTime = new Date();
         }
@@ -249,5 +244,60 @@ exports.fetchTimesheetForAllEmployees = async (req, res) => {
     res.json(timesheets);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch timesheets", error: err });
+  }
+};
+
+exports.fetchTimesheetsWithTicketStatus = async (req, res) => {
+  try {
+    const result = await Timesheet.aggregate([
+      {
+        $addFields: {
+          ticketObjectId: {
+            $convert: {
+              input: "$ticket",
+              to: "objectId",
+              onError: null,
+              onNull: null,
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "tickets",
+          localField: "ticketObjectId",
+          foreignField: "_id",
+          as: "ticketData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$ticketData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          // Include only timesheet fields
+          employee: 1,
+          employeeId: 1,
+          ticket: 1,
+          ticketNo: 1,
+          subject: 1,
+          task: 1,
+          date: 1,
+          workingTime: 1,
+          totalWork: 1,
+
+          // From ticketData, only mainStatus
+          mainStatus: "$ticketData.mainStatus",
+        },
+      },
+    ]);
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Error in aggregation:", err);
+    res.status(500).json({ message: "Failed to fetch enriched timesheets." });
   }
 };

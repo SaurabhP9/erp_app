@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ["admin", "employee", "client"],
-    required: true
+    required: true,
   },
   departmentId: { type: String },
   department: { type: String },
@@ -16,12 +16,12 @@ const userSchema = new mongoose.Schema({
   designation: { type: String },
   skillId: [{ type: String }],
   skill: [{ type: String }],
-  projects : [{ type: String }],
+  projects: [{ type: String }],
   projectIds: [{ type: String }],
   createdBy: { type: String },
   createdTime: { type: Date, default: Date.now },
   updatedBy: { type: String },
-  updatedTime: { type: Date }
+  updatedTime: { type: Date },
 });
 
 module.exports = mongoose.model("User", userSchema);

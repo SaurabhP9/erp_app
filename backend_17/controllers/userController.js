@@ -18,11 +18,11 @@ exports.createUser = async (req, res) => {
       role,
       department,
       projectId,
-      designationId,
+      departmentId,
       skillId,
       permissions,
       createdBy,
-      projects
+      projects,
     } = req.body;
 
     if (!hasRequiredFields({ name, email, password, role })) {
@@ -35,27 +35,27 @@ exports.createUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("frontend data ",req.body)
+    console.log("frontend data ", req.body);
     const newUser = new User({
       name,
       email,
       mobile,
-      password: hashedPassword, 
+      password: hashedPassword,
       role,
       department,
       projectId,
-      designationId,
+      departmentId,
       skillId,
       permissions,
       createdBy,
       projects,
-      createdTime: new Date()
+      createdTime: new Date(),
     });
 
     await newUser.save();
     res.status(201).json(newUser);
   } catch (err) {
-    console.log(err.message)
+    console.log(err.message);
     res.status(500).json({ error: err.message });
   }
 };
@@ -76,11 +76,11 @@ exports.getAllUsersByRole = async (req, res) => {
 
     if (["admin", "employee", "client"].includes(role)) {
       const users = await User.find({ role }).lean();
-      return res.json(users); 
+      console.log(users);
+      return res.json(users);
     }
 
     return res.status(400).json({ error: "Invalid role" });
-
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -103,7 +103,7 @@ exports.updateUser = async (req, res) => {
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
       new: true,
-      runValidators: true
+      runValidators: true,
     });
 
     if (!updatedUser) {
@@ -116,7 +116,6 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 // Delete User
 exports.deleteUser = async (req, res) => {

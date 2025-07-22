@@ -25,6 +25,7 @@ const {
   getTimesheetForUser,
   getTimesheetsByEmployee,
   fetchTimesheetForAllEmployees,
+  fetchTimesheetsWithTicketStatus,
 } = require("../controllers/timesheetController");
 
 // router.get("/all", getTimesheetFromTickets);
@@ -33,6 +34,7 @@ router.get("/user/:userId", getTimesheetForUser);
 
 router.post("/add", addTimesheet);
 router.get("/employee/:id", getTimesheetsByEmployee);
-router.get("/all", fetchTimesheetForAllEmployees);
+// router.get("/all", fetchTimesheetForAllEmployees);
+router.get("/all", fetchTimesheetsWithTicketStatus);
 
 module.exports = router;

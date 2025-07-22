@@ -2,89 +2,92 @@ const mongoose = require("mongoose");
 
 const ticketSchema = new mongoose.Schema({
   name: {
-    type: String
+    type: String,
   },
-  ticketNo:{
-    type: String
+  ticketNo: {
+    type: String,
   },
   userId: {
     type: String, // Who created the ticket (user _id)
-    required: true
+    required: true,
   },
   employeeId: {
     type: String, // Assigned to (employee _id)
-    default: null
+    default: null,
   },
   employee: {
     type: String,
-    default: null
+    default: null,
   },
   project: {
     type: String,
-    required: true
+    required: true,
   },
   projectId: {
-    type: String
+    type: String,
   },
   departmentId: {
-    type: String
+    type: String,
   },
   department: {
-    type: String
+    type: String,
   },
   category: {
     type: String,
-    required: true
+    required: true,
   },
   categoryId: {
     type: String,
-    required: true
+    required: true,
   },
   priority: {
     type: String,
-    required: true
+    required: true,
   },
   priorityId: {
     type: String,
-    required: true
+    required: true,
   },
   subject: {
     type: String,
-    required: true
+    required: true,
   },
   issue: {
     type: String,
-    required: true
+    required: true,
   },
   targetDate: {
-    type: Date
+    type: Date,
   },
   handoverHistory: [
     {
       fromEmployeeId: String,
       toEmployeeId: String,
       reassignedBy: String,
-      reassignedAt: { type: Date, default: Date.now }
-    }
+      reassignedAt: { type: Date, default: Date.now },
+    },
   ],
   attachments: [
     {
       filename: String,
       path: String,
-      mimetype: String
-    }
+      mimetype: String,
+    },
   ],
   mainStatus: {
     type: String,
     enum: ["open", "inProcess", "closed", "handover", "working"],
-    default: "open"
+    default: "open",
   },
   createdBy: String,
   createdTime: { type: String, default: () => new Date().toISOString() },
   updatedBy: String,
-  updatedTime: { type: String, default: () => new Date().toISOString() }
+  updatedTime: { type: String, default: () => new Date().toISOString() },
 });
 
 ticketSchema.index({ userId: 1 });
 ticketSchema.index({ "handoverHistory.reassignedBy": 1 });
+
+ticketSchema.index({ employee: 1, date: -1 }); // Valid
+
 module.exports = mongoose.model("Ticket", ticketSchema);
