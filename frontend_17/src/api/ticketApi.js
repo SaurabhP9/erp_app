@@ -7,7 +7,7 @@ export const getAllTickets = async () => {
 };
 
 export const createTicket = async (formData) => {
-  console.log("form data sending while updating", formData);
+  console.log("form data sending while creating", formData);
   const res = await api.post("/api/ticket/create", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
