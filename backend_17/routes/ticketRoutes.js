@@ -23,8 +23,8 @@ router.post(
 router.get("/", verifyToken, ticketController.getAllTickets);
 router.get("/:id", verifyToken, ticketController.getTicketById);
 
-// Admins can update and delete
-router.put("/:id", verifyToken, ticketController.updateTicket);
+router.put("/:id", verifyToken, ticketController.updateTicketNew);
+
 router.delete(
   "/:id",
   verifyToken,

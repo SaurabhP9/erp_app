@@ -210,6 +210,94 @@ exports.updateTicket = async (req, res) => {
   }
 };
 
+//new  updating method for tickets
+exports.updateTicketNew = async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+
+    // 🧩 Handle FormData-based handoverHistory parsing
+    if (req.body['handoverHistory[0].fromEmployeeId']) {
+      const parsedHistory = [];
+      let i = 0;
+
+      while (req.body[`handoverHistory[${i}].fromEmployeeId`]) {
+        parsedHistory.push({
+          fromEmployeeId: req.body[`handoverHistory[${i}].fromEmployeeId`],
+          toEmployeeId: req.body[`handoverHistory[${i}].toEmployeeId`],
+          reassignedBy: req.body[`handoverHistory[${i}].reassignedBy`],
+          reassignedAt: new Date(req.body[`handoverHistory[${i}].reassignedAt`]),
+        });
+        i++;
+      }
+
+      req.body.handoverHistory = parsedHistory;
+
+      Object.keys(req.body).forEach((key) => {
+        if (key.startsWith("handoverHistory[")) delete req.body[key];
+      });
+    }
+
+    const { mainStatus, employeeId, reassignedBy } = req.body;
+
+    const ticket = await Ticket.findById(ticketId);
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    const isAlreadyClosed = ticket.mainStatus === "closed";
+    const updateData = { ...req.body };
+
+    if (!isAlreadyClosed) {
+      updateData.updatedTime = new Date();
+    }
+
+    const isHandover =
+      mainStatus === "handover" &&
+      employeeId &&
+      employeeId !== ticket.employeeId;
+
+    let updatedTicket;
+
+    if (
+      isHandover &&
+      !updateData.handoverHistory // Only push if you're not replacing full array
+    ) {
+      delete updateData.handoverHistory;
+
+      updatedTicket = await Ticket.findByIdAndUpdate(
+        ticketId,
+        {
+          $set: updateData,
+          $push: {
+            handoverHistory: {
+              fromEmployeeId: ticket.employeeId,
+              toEmployeeId: employeeId,
+              reassignedBy,
+              reassignedAt: new Date(),
+            },
+          },
+        },
+        { new: true, runValidators: true }
+      );
+    } else {
+      updatedTicket = await Ticket.findByIdAndUpdate(ticketId, updateData, {
+        new: true,
+        runValidators: true,
+      });
+    }
+
+    const formattedTicket = {
+      ...updatedTicket.toObject(),
+      createdTime: formatDate(updatedTicket.createdTime),
+      updatedTime: formatDate(updatedTicket.updatedTime),
+    };
+
+    res.json(formattedTicket);
+  } catch (err) {
+    console.error("Ticket update error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 // Delete Ticket
 exports.deleteTicket = async (req, res) => {
   try {

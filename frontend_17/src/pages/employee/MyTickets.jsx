@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import {
   Container,
   Typography,
@@ -34,8 +36,6 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import EditIcon from "@mui/icons-material/Edit"; // Added: EditIcon
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import { sendTicketEmail } from "../../api/emailApi";
 
 import {
@@ -71,6 +71,7 @@ const username = localStorage.getItem("username");
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
 const initialFormData = {
   name: "",
   subject: "",
@@ -150,6 +151,9 @@ const E_Ticket = () => {
     wordBreak: "break-word",
     py: 0.5,
   };
+  
+  const formatToIST = (utcDate) =>
+  dayjs(utcDate).tz("Asia/Kolkata").format("DD MMM YYYY hh:mm A");
 
   const exportToExcel = () => {
     const data = sortedTickets.map((ticket) => ({
@@ -162,12 +166,8 @@ const E_Ticket = () => {
       "Sub Status": ticket.subStatus,
       Assignee:
         users.find((u) => u._id === ticket.employeeId)?.name || "Unassigned",
-      "Created Time": dayjs(ticket.createdTime)
-        .tz("Asia/Kolkata")
-        .format("YYYY-MM-DD HH:mm"),
-      "Updated Time": dayjs(ticket.updatedTime)
-        .tz("Asia/Kolkata")
-        .format("YYYY-MM-DD HH:mm"),
+      "Created Time": formatToIST(ticket.createdTime),
+      "Updated Time":formatToIST(ticket.updatedTime),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -379,53 +379,61 @@ const E_Ticket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+  
     const currentUserId = localStorage.getItem("userId");
-
+  
     try {
       let createdOrUpdated;
-
+  
       if (editMode) {
         const originalTicket = tickets.find((t) => t._id === editId);
         const form = new FormData();
-
+  
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
             value.forEach((file) => form.append("attachments", file));
-          } else {
+          } else if (key !== "handoverHistory") {
             form.append(key, value);
           }
         });
-
-        // Handover update logic
+  
+        // If handover occurred during edit
         const isHandover =
           formData.mainStatus === "handover" &&
           formData.employeeId !== originalTicket?.employeeId;
-
+  
         if (isHandover) {
-          const existingHandoverHistory = originalTicket?.handoverHistory || [];
-
-          const handoverEntry = {
+          const existingHistory = originalTicket?.handoverHistory || [];
+  
+          const newEntry = {
             fromEmployeeId: originalTicket.employeeId,
             toEmployeeId: formData.employeeId,
             reassignedBy: currentUserId,
-            reassignedAt: new Date(),
+            reassignedAt: new Date().toISOString(),
           };
-
-          form.append(
-            "handoverHistory",
-            JSON.stringify([...existingHandoverHistory, handoverEntry])
-          );
+  
+          // Flatten existing + new entries
+          const combinedHistory = [...existingHistory, newEntry];
+  
+          combinedHistory.forEach((entry, index) => {
+            form.append(`handoverHistory[${index}].fromEmployeeId`, entry.fromEmployeeId);
+            form.append(`handoverHistory[${index}].toEmployeeId`, entry.toEmployeeId);
+            form.append(`handoverHistory[${index}].reassignedBy`, entry.reassignedBy);
+            form.append(`handoverHistory[${index}].reassignedAt`, new Date(entry.reassignedAt).toISOString());
+          });
         }
-
+  
         createdOrUpdated = await updateTicket(editId, form);
+  
         setTickets((prev) =>
           prev.map((t) => (t._id === editId ? createdOrUpdated : t))
         );
-
+  
         if (originalTicket?.employeeId !== formData.employeeId) {
           const selectedEmployee = employees.find(
             (emp) => emp._id === formData.employeeId
           );
+  
           const reassignmentComment = {
             ticketId: editId,
             userId: currentUserId,
@@ -435,30 +443,32 @@ const E_Ticket = () => {
             } to ${selectedEmployee?.name || "Unassigned"}.`,
             visibility: "internal",
           };
+  
           await createComment(reassignmentComment);
         }
-
+  
         setSnackbarMessage("Ticket updated successfully!");
         setSnackbarSeverity("success");
       } else {
+        // New Ticket Creation
         const isHandover =
           formData.mainStatus === "handover" &&
+          formData.employeeId &&
           formData.employeeId !== currentUserId;
-
+  
         if (isHandover) {
           const jsonPayload = {
             ...formData,
-            employeeId: currentUserId,
+            userId: currentUserId,
             handoverHistory: [
               {
                 fromEmployeeId: currentUserId,
                 toEmployeeId: formData.employeeId,
                 reassignedBy: currentUserId,
-                reassignedAt: new Date(),
+                reassignedAt: new Date().toISOString(),
               },
             ],
           };
-
           createdOrUpdated = await createTicket(jsonPayload);
         } else {
           const form = new FormData();
@@ -470,34 +480,31 @@ const E_Ticket = () => {
             }
           });
           form.append("userId", currentUserId);
-
+  
           createdOrUpdated = await createTicket(form);
         }
-
+  
         setTickets((prev) => [...prev, createdOrUpdated]);
         setSnackbarMessage("Ticket created successfully!");
         setSnackbarSeverity("success");
       }
-
-      const clientEmail = "client@example.com";
-      sendEmailToAssignedEmployee(editMode, createdOrUpdated);
-      // sendEmailToClient(createdOrUpdated, clientEmail);
-      setSnackbarOpen(true); // Show Snackbar on success
+  
+      setSnackbarOpen(true);
     } catch (err) {
       console.error("Submit failed:", err);
       setSnackbarMessage("Failed to create/update ticket.");
       setSnackbarSeverity("error");
-      setSnackbarOpen(true); // Show Snackbar on error
+      setSnackbarOpen(true);
     } finally {
-      setIsSubmitting(false); // Reset submitting state
+      setIsSubmitting(false);
     }
-
+  
     setFormData(initialFormData);
     setShowForm(false);
     setEditMode(false);
     setEditId(null);
     await fetchAll();
-  };
+  };  
 
   async function sendEmailToClient(createdOrUpdated, email) {
     const requesterName = localStorage.getItem("username") || "Valued User";
@@ -558,41 +565,32 @@ const E_Ticket = () => {
     const htmlContent = `
         <div style="background-color: #fdf8e4; padding: 40px 0;">
           <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-            <p style="font-size: 16px;">Dear ${
-              assignedEmployee?.name || "Team"
-            },</p>
+            <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
+      },</p>
 
             <p style="font-size: 15px;">
-              ${
-                isEdit
-                  ? "The following ticket has been updated"
-                  : "A new ticket has been assigned to you"
-              }. Please review the details below and take appropriate action.
+              ${isEdit
+        ? "The following ticket has been updated"
+        : "A new ticket has been assigned to you"
+      }. Please review the details below and take appropriate action.
             </p>
 
             <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
             <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.name
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.subject
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.project
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.category
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.priority
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.issue
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.mainStatus || "Open"
-              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
+      }</td></tr>
             </table>
 
             <div style="margin-top: 30px; text-align: center;">
@@ -613,31 +611,36 @@ const E_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
-        createdOrUpdated.name
-      }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
+        }`,
       html: htmlContent,
     });
   }
 
   const handleEdit = (ticket) => {
+    const selectedProject = projects.find(p => p._id === ticket.projectId);
+    const selectedCategory = categories.find(c => c._id === ticket.categoryId);
+    const selectedPriority = priorities.find(p => p._id === ticket.priorityId);
+    const selectedEmployee = employees.find(e => e._id === ticket.employeeId);
+
     setFormData({
       name: ticket.name,
       subject: ticket.subject,
       projectId: ticket.projectId,
-      project: ticket.project,
+      project: selectedProject?.project || "",
       departmentId: ticket.departmentId,
       department: ticket.department,
       categoryId: ticket.categoryId,
-      category: ticket.category,
+      category: selectedCategory?.category || "",
       priorityId: ticket.priorityId,
-      priority: ticket.priority,
+      priority: selectedPriority?.priority || "",
       issue: ticket.issue,
       mainStatus: ticket.mainStatus,
       employeeId: ticket.employeeId,
-      employee: ticket.employee,
+      employee: selectedEmployee?.name || "",
       attachments: [],
     });
+
     setEditMode(true);
     setEditId(ticket._id);
     setShowForm(true);
@@ -977,20 +980,20 @@ const E_Ticket = () => {
                               idx === 0
                                 ? "5px"
                                 : idx === 1
-                                ? "10px"
-                                : idx === 2
-                                ? "20px"
-                                : idx === 3
-                                ? "20px"
-                                : idx === 4
-                                ? "40px"
-                                : idx === 5 || idx === 6
-                                ? "25px"
-                                : idx === 7 || idx === 8 || idx === 9
-                                ? "25px"
-                                : idx === 10
-                                ? "15px"
-                                : "auto",
+                                  ? "10px"
+                                  : idx === 2
+                                    ? "20px"
+                                    : idx === 3
+                                      ? "20px"
+                                      : idx === 4
+                                        ? "40px"
+                                        : idx === 5 || idx === 6
+                                          ? "25px"
+                                          : idx === 7 || idx === 8 || idx === 9
+                                            ? "25px"
+                                            : idx === 10
+                                              ? "15px"
+                                              : "auto",
                           }}
                         >
                           {label}
@@ -1054,16 +1057,12 @@ const E_Ticket = () => {
                           <TableCell
                             sx={{ width: "25px", border: "1px solid #ddd" }}
                           >
-                            {dayjs(ticket.createdTime)
-                              .tz("Asia/Kolkata")
-                              .format("DD‑MMM‑YYYY HH:mm")}
+                            {formatToIST(ticket.createdTime)}
                           </TableCell>
                           <TableCell
                             sx={{ width: "25px", border: "1px solid #ddd" }}
                           >
-                            {dayjs(ticket.updatedTime)
-                              .tz("Asia/Kolkata")
-                              .format("DD‑MMM‑YYYY HH:mm")}
+                            {formatToIST(ticket.updatedTime)}
                           </TableCell>
                           <TableCell
                             sx={{ width: "25px", border: "1px solid #ddd" }}
@@ -1293,8 +1292,8 @@ const E_Ticket = () => {
                         ? "Updating..."
                         : "Creating..."
                       : editMode
-                      ? "Update"
-                      : "Submit"}
+                        ? "Update"
+                        : "Submit"}
                   </Button>
                   <Button variant="outlined" onClick={() => setShowForm(false)}>
                     Back
@@ -1370,9 +1369,7 @@ const E_Ticket = () => {
                   ["Category", viewTicket.category],
                   [
                     "Submitted",
-                    dayjs(viewTicket.createdTime)
-                      .tz("Asia/Kolkata")
-                      .format("DD-MMM-YYYY HH:mm"),
+                    formatToIST(viewTicket.createdTime),
                   ],
                   ["Assigned To", viewTicket.employee || "Not Assigned"],
                 ].map(([label, value], i) => (
