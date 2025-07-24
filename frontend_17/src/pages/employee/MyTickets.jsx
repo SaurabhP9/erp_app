@@ -152,9 +152,15 @@ const E_Ticket = () => {
     py: 0.5,
   };
   
-  const formatToIST = (utcDate) =>
-  dayjs(utcDate).tz("Asia/Kolkata").format("DD MMM YYYY hh:mm A");
-
+  const formatToIST = (dateString) => {
+    const parsed = dayjs(dateString);
+  
+    // If it's already in local/IST, don't shift it again
+    const istTime = parsed.tz("Asia/Kolkata");
+  
+    return istTime.format("DD MMM YYYY hh:mm A");
+  };
+  
   const exportToExcel = () => {
     const data = sortedTickets.map((ticket) => ({
       "Ticket No": ticket.ticketNo,

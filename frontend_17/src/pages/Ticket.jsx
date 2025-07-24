@@ -149,8 +149,14 @@ const Ticket = () => {
   //   textOverflow: "ellipsis",
   // };
 
-  const formatToIST = (utcDate) =>
-  dayjs(utcDate).tz("Asia/Kolkata").format("DD MMM YYYY hh:mm A");
+  const formatToIST = (dateString) => {
+    const parsed = dayjs(dateString);
+  
+    // If it's already in local/IST, don't shift it again
+    const istTime = parsed.tz("Asia/Kolkata");
+  
+    return istTime.format("DD MMM YYYY hh:mm A");
+  };  
 
   const cellStyle = {
     border: "1px solid #ddd",
