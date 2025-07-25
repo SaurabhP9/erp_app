@@ -151,12 +151,15 @@ const E_Ticket = () => {
     wordBreak: "break-word",
     py: 0.5,
   };
-  
+
   const formatToIST = (dateString) => {
-    if(dateString.length<0) return "";
-    return dayjs.utc(dateString).tz("Asia/Kolkata").format("DD MMM YYYY hh:mm A");
-  };  
-  
+    if (dateString.length < 0) return "";
+    return dayjs
+      .utc(dateString)
+      .tz("Asia/Kolkata")
+      .format("DD MMM YYYY hh:mm A");
+  };
+
   const exportToExcel = () => {
     const data = sortedTickets.map((ticket) => ({
       "Ticket No": ticket.ticketNo,
@@ -169,7 +172,7 @@ const E_Ticket = () => {
       Assignee:
         users.find((u) => u._id === ticket.employeeId)?.name || "Unassigned",
       "Created Time": formatToIST(ticket.createdTime),
-      "Updated Time":formatToIST(ticket.updatedTime),
+      "Updated Time": formatToIST(ticket.updatedTime),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -381,16 +384,16 @@ const E_Ticket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-  
+
     const currentUserId = localStorage.getItem("userId");
-  
+
     try {
       let createdOrUpdated;
-  
+
       if (editMode) {
         const originalTicket = tickets.find((t) => t._id === editId);
         const form = new FormData();
-  
+
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
             value.forEach((file) => form.append("attachments", file));
@@ -398,44 +401,56 @@ const E_Ticket = () => {
             form.append(key, value);
           }
         });
-  
+
         // If handover occurred during edit
         const isHandover =
           formData.mainStatus === "handover" &&
           formData.employeeId !== originalTicket?.employeeId;
-  
+
         if (isHandover) {
           const existingHistory = originalTicket?.handoverHistory || [];
-  
+
           const newEntry = {
             fromEmployeeId: originalTicket.employeeId,
             toEmployeeId: formData.employeeId,
             reassignedBy: currentUserId,
             reassignedAt: new Date().toISOString(),
           };
-  
+
           // Flatten existing + new entries
           const combinedHistory = [...existingHistory, newEntry];
-  
+
           combinedHistory.forEach((entry, index) => {
-            form.append(`handoverHistory[${index}].fromEmployeeId`, entry.fromEmployeeId);
-            form.append(`handoverHistory[${index}].toEmployeeId`, entry.toEmployeeId);
-            form.append(`handoverHistory[${index}].reassignedBy`, entry.reassignedBy);
-            form.append(`handoverHistory[${index}].reassignedAt`, new Date(entry.reassignedAt).toISOString());
+            form.append(
+              `handoverHistory[${index}].fromEmployeeId`,
+              entry.fromEmployeeId
+            );
+            form.append(
+              `handoverHistory[${index}].toEmployeeId`,
+              entry.toEmployeeId
+            );
+            form.append(
+              `handoverHistory[${index}].reassignedBy`,
+              entry.reassignedBy
+            );
+            form.append(
+              `handoverHistory[${index}].reassignedAt`,
+              new Date(entry.reassignedAt).toISOString()
+            );
           });
         }
-  
+
         createdOrUpdated = await updateTicket(editId, form);
-  
+
         setTickets((prev) =>
           prev.map((t) => (t._id === editId ? createdOrUpdated : t))
         );
-  
+
         if (originalTicket?.employeeId !== formData.employeeId) {
           const selectedEmployee = employees.find(
             (emp) => emp._id === formData.employeeId
           );
-  
+
           const reassignmentComment = {
             ticketId: editId,
             userId: currentUserId,
@@ -445,10 +460,10 @@ const E_Ticket = () => {
             } to ${selectedEmployee?.name || "Unassigned"}.`,
             visibility: "internal",
           };
-  
+
           await createComment(reassignmentComment);
         }
-  
+
         setSnackbarMessage("Ticket updated successfully!");
         setSnackbarSeverity("success");
       } else {
@@ -457,7 +472,7 @@ const E_Ticket = () => {
           formData.mainStatus === "handover" &&
           formData.employeeId &&
           formData.employeeId !== currentUserId;
-  
+
         if (isHandover) {
           const jsonPayload = {
             ...formData,
@@ -482,15 +497,15 @@ const E_Ticket = () => {
             }
           });
           form.append("userId", currentUserId);
-  
+
           createdOrUpdated = await createTicket(form);
         }
-  
+
         setTickets((prev) => [...prev, createdOrUpdated]);
         setSnackbarMessage("Ticket created successfully!");
         setSnackbarSeverity("success");
       }
-  
+
       setSnackbarOpen(true);
     } catch (err) {
       console.error("Submit failed:", err);
@@ -500,13 +515,13 @@ const E_Ticket = () => {
     } finally {
       setIsSubmitting(false);
     }
-  
+
     setFormData(initialFormData);
     setShowForm(false);
     setEditMode(false);
     setEditId(null);
     await fetchAll();
-  };  
+  };
 
   async function sendEmailToClient(createdOrUpdated, email) {
     const requesterName = localStorage.getItem("username") || "Valued User";
@@ -567,32 +582,41 @@ const E_Ticket = () => {
     const htmlContent = `
         <div style="background-color: #fdf8e4; padding: 40px 0;">
           <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-            <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
-      },</p>
+            <p style="font-size: 16px;">Dear ${
+              assignedEmployee?.name || "Team"
+            },</p>
 
             <p style="font-size: 15px;">
-              ${isEdit
-        ? "The following ticket has been updated"
-        : "A new ticket has been assigned to you"
-      }. Please review the details below and take appropriate action.
+              ${
+                isEdit
+                  ? "The following ticket has been updated"
+                  : "A new ticket has been assigned to you"
+              }. Please review the details below and take appropriate action.
             </p>
 
             <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
             <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
-      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.name
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.subject
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.project
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.category
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.priority
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.issue
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.mainStatus || "Open"
+              }</td></tr>
             </table>
 
             <div style="margin-top: 30px; text-align: center;">
@@ -613,17 +637,22 @@ const E_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
-        }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
+        createdOrUpdated.name
+      }`,
       html: htmlContent,
     });
   }
 
   const handleEdit = (ticket) => {
-    const selectedProject = projects.find(p => p._id === ticket.projectId);
-    const selectedCategory = categories.find(c => c._id === ticket.categoryId);
-    const selectedPriority = priorities.find(p => p._id === ticket.priorityId);
-    const selectedEmployee = employees.find(e => e._id === ticket.employeeId);
+    const selectedProject = projects.find((p) => p._id === ticket.projectId);
+    const selectedCategory = categories.find(
+      (c) => c._id === ticket.categoryId
+    );
+    const selectedPriority = priorities.find(
+      (p) => p._id === ticket.priorityId
+    );
+    const selectedEmployee = employees.find((e) => e._id === ticket.employeeId);
 
     setFormData({
       name: ticket.name,
@@ -982,20 +1011,20 @@ const E_Ticket = () => {
                               idx === 0
                                 ? "5px"
                                 : idx === 1
-                                  ? "10px"
-                                  : idx === 2
-                                    ? "20px"
-                                    : idx === 3
-                                      ? "20px"
-                                      : idx === 4
-                                        ? "40px"
-                                        : idx === 5 || idx === 6
-                                          ? "25px"
-                                          : idx === 7 || idx === 8 || idx === 9
-                                            ? "25px"
-                                            : idx === 10
-                                              ? "15px"
-                                              : "auto",
+                                ? "10px"
+                                : idx === 2
+                                ? "20px"
+                                : idx === 3
+                                ? "20px"
+                                : idx === 4
+                                ? "40px"
+                                : idx === 5 || idx === 6
+                                ? "25px"
+                                : idx === 7 || idx === 8 || idx === 9
+                                ? "25px"
+                                : idx === 10
+                                ? "15px"
+                                : "auto",
                           }}
                         >
                           {label}
@@ -1294,8 +1323,8 @@ const E_Ticket = () => {
                         ? "Updating..."
                         : "Creating..."
                       : editMode
-                        ? "Update"
-                        : "Submit"}
+                      ? "Update"
+                      : "Submit"}
                   </Button>
                   <Button variant="outlined" onClick={() => setShowForm(false)}>
                     Back
@@ -1369,10 +1398,7 @@ const E_Ticket = () => {
                   ["Priority", viewTicket.priority],
                   ["Project", viewTicket.project],
                   ["Category", viewTicket.category],
-                  [
-                    "Submitted",
-                    formatToIST(viewTicket.createdTime),
-                  ],
+                  ["Submitted", formatToIST(viewTicket.createdTime)],
                   ["Assigned To", viewTicket.employee || "Not Assigned"],
                 ].map(([label, value], i) => (
                   <Box key={i} sx={{ width: "40%", mb: 1 }}>
@@ -1403,7 +1429,7 @@ const E_Ticket = () => {
                   viewTicket.attachments.map((file, i) => (
                     <Box key={i} sx={{ mb: 0.5 }}>
                       <a
-                        href={`${BASE_URL}/${file.path}`}
+                        href={file.path} // ✨ CHANGE THIS LINE: Directly use file.path as it's the full Cloudinary URL
                         target="_blank"
                         rel="noreferrer"
                         style={{ textDecoration: "none", color: "#1976d2" }}
