@@ -10,16 +10,12 @@ export const getAllUsersByRole = async (role) => {
 }
 
 export const createUser = async (userData) => {
-    console.log("user data -..",userData)
   const res = await api.post("/api/user/create", userData);
-  console.log("response os _>",res.data);
   return res.data;
 };
 
 export const updateUser = async (id, userData) => {
-  console.log("updateing user -> ", userData);
   const res = await api.put(`/api/user/${id}`, userData);
-  console.log("response after updating ",res);
   return res.data;
 };
 

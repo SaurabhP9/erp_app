@@ -1701,8 +1701,6 @@ export default function Dashboard() {
       e.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       departments.find((d) => d.department === e.department)
   );
-  console.log("Emp user ", empUsers);
-  console.log("filtered user ", filtered);
   if (loading) {
     return (
       <Box

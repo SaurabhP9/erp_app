@@ -10,9 +10,7 @@ export const getCommentsByTicket = async (ticketId) => {
 
 // Create a new comment
 export const createComment = async (data) => {
-  console.log("Comment creation ", data);
   const res = await api.post("/api/comments", data);
-  console.log("Comment creation  respinse ", res.data);
   return res.data;
 };
 

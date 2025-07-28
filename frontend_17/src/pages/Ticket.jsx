@@ -639,21 +639,19 @@ const Ticket = () => {
   };
 
   const handleView = (ticket) => {
-    console.log("handover ticket history ", ticket.handoverHistory);
     setViewTicket(ticket);
-    console.log("users are ", users);
   };
 
   const submitComment = async () => {
     if (!newComment.trim()) return;
-    console.log("new comment ", newComment);
+    
     const payload = {
       ticketId: viewTicket._id,
       userId: localStorage.getItem("userId"),
       comment: newComment,
       visibility: isPublic ? "public" : "internal",
     };
-    console.log("new payload ", payload);
+    
     try {
       await createComment(payload);
       setNewComment("");

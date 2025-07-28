@@ -32,7 +32,7 @@ export default function E_home() {
     const fetchTickets = async () => {
       try {
         const tickets = await getTicketsByEmployeeId(userId);
-
+        
         const stats = {
           total: tickets.length,
           today: 0,
@@ -40,27 +40,41 @@ export default function E_home() {
           open: 0,
           inProcess: 0,
           closed: 0,
-          handover: 0,
+          handover: 0,  // will now be based on handoverHistory
           working: 0,
         };
-
+    
         const todayStr = new Date().toISOString().split("T")[0];
-
+    
         tickets.forEach((t) => {
           const created = t.createdTime?.split("T")[0];
           if (created === todayStr) stats.today++;
-
+    
           if (t.employeeId) stats.assigned++;
-
+    
+          // Count normal statuses
           const status = t.mainStatus;
-          if (stats[status] !== undefined) stats[status]++;
+          if (status && status !== "handover" && stats[status] !== undefined) {
+            stats[status]++;
+          }
+          console.log(status);
+    
+          if (
+            Array.isArray(t.handoverHistory) &&
+            t.handoverHistory.some(
+              (h) => h.fromEmployeeId?.toString() === userId?.toString()
+            )
+          ) {
+            stats.handover++;
+          }
+          
         });
-
+    
         setTicketStats(stats);
       } catch (err) {
         console.error("Failed to load user tickets", err);
       }
-    };
+    };    
 
     fetchTickets();
   }, []);

@@ -54,7 +54,6 @@ export default function ProjectList() {
   const fetchProjects = async () => {
     try {
       const data = await getAllProjects();
-      console.log(data);
       setProjects(data);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -109,7 +108,6 @@ export default function ProjectList() {
 
     try {
       if (editIndex !== null) {
-        console.log(projects[editIndex]);
         const projectId = projects[editIndex]._id; // Assuming _id is the unique identifier
         const updated = await updateProject(projectId, form);
         const updatedList = [...projects];
@@ -119,7 +117,6 @@ export default function ProjectList() {
         const newProject = await createProject(form);
         setProjects([...projects, newProject]);
       }
-      console.log(projects);
       handleClose();
     } catch (err) {
       console.error("Error in submit:", err);
@@ -129,9 +126,8 @@ export default function ProjectList() {
 
   const handleDelete = async (index) => {
     try {
-      console.log("iindex is -> ", index);
       const projectId = projects[index]._id; // Assuming _id is the unique identifier
-      console.log("data project is ->", projects[index]);
+
       await deleteProject(projectId);
       const updated = projects.filter((_, i) => i !== index);
       setProjects(updated);
@@ -148,7 +144,6 @@ export default function ProjectList() {
     )
   );
 
-  console.log(filteredProjects);
   const sortedProjects = [...filteredProjects].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const valA = a[sortConfig.key]?.toLowerCase() || "";

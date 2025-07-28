@@ -3,7 +3,6 @@ const { Status } = require("../models");
 // Create Status
 exports.createStatus = async (req, res) => {
   try {
-    console.log("creating ", req.body);
     const status = await Status.create(req.body);
     res.status(201).json(status);
   } catch (err) {

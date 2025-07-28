@@ -47,8 +47,6 @@ exports.updateCategory = async (req, res) => {
 // Delete Category (soft delete)
 exports.deleteCategory = async (req, res) => {
   try {
-    console.log("Deleting category with ID ->", req.params.id);
-
     const result = await Category.deleteOne({ _id: req.params.id });
 
     if (result.deletedCount === 0) {

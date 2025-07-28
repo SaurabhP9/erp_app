@@ -439,9 +439,12 @@ exports.getTicketsByEmployeeId = async (req, res) => {
       return res.status(400).json({ error: "User ID is required" });
     }
 
-    const tickets = await Ticket.find({ employeeId: empId }).sort({
-      createdTime: -1,
-    });
+    const tickets = await Ticket.find({
+      $or: [
+        { employeeId: empId },
+        { "handoverHistory.fromEmployeeId": empId }
+      ],
+    }).sort({ createdTime: -1 });
 
     const formattedTickets = tickets.map((ticket) => ({
       ...ticket.toObject(),

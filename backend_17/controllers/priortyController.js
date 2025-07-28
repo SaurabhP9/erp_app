@@ -3,7 +3,6 @@ const Priority = require("../models/priority");
 // Create Priority
 exports.createPriority = async (req, res) => {
   try {
-    console.log(req.body);
     const priority = await Priority.create({
       priority: req.body.priority,
       createdBy: req.body.createdBy,
@@ -11,7 +10,6 @@ exports.createPriority = async (req, res) => {
       updatedBy: req.body.updatedBy,
       updatedTime: new Date().toISOString()
     });
-console.log("data pri ", priority);
     res.status(201).json(priority);
   } catch (err) {
     console.log("errpr msg ",err.message);

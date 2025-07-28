@@ -47,7 +47,6 @@ export default function Home() {
       try {
         const data = await getHomeSummary();
         setSummary(data);
-        console.log("filter role ", roleFilter);
         if (roleFilter !== "all") {
           const roleSummary = await getTicketSummaryByRole(roleFilter);
           setRoleBasedSummary(roleSummary || []);

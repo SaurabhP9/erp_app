@@ -7,23 +7,18 @@ export const getAllTickets = async () => {
 };
 
 export const createTicket = async (formData) => {
-  console.log("form data sending while creating", formData);
   const res = await api.post("/api/ticket/create", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
   });
-
-  console.log("response is ", res.data);
   return res.data;
 };
 
 
 
 export const updateTicket = async (id, ticketData) => {
-  console.log("form data sending while updating", ticketData);
   const res = await api.put(`/api/ticket/${id}`, ticketData);
-  console.log("response while updating", res.data);
   return res.data;
 };
 
@@ -44,6 +39,7 @@ export const getTicketsByUserId = async (userId) => {
 };
 
 export const getTicketsByEmployeeId = async (empId) => {
+  
   const res = await api.get(`/api/ticket/employee/${empId}`);
   return res.data;
 };
@@ -55,6 +51,5 @@ export const getFilterTickets = async (filters) => {
 
 export const getHandoverTicketsByUser = async (userId) => {
   const res = await api.get(`/api/ticket/handover/by/${userId}`);
-  console.log("handOver tickets for user ",res.data);
   return res.data;
 };

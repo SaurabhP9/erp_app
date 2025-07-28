@@ -412,7 +412,6 @@ export default function Timesheet() {
         item.mainStatus,
       ]);
 
-      console.log("formated data is ", timesheets);
       setData(formatted);
     } catch (err) {
       console.error("Error fetching timesheets:", err);
@@ -496,8 +495,6 @@ export default function Timesheet() {
         String(cell).toLowerCase().includes(searchTerm.toLowerCase())
       ) && applyFilters(row)
   );
-
-  console.log("Filter time sheet data ", filteredData);
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, display: "flex" }}>

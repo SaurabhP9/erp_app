@@ -52,9 +52,6 @@ exports.updateOrganizationById = async (req, res) => {
 
 exports.deleteOrganizationById = async (req, res) => {
   try {
-    console.log("req.originalUrl ->", req.originalUrl);
-    console.log("req.params ->", req.params);
-
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -104,11 +101,9 @@ exports.getParameter = async (req, res) => {
 exports.updateParameter = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("requeist param ->", id)
 
     if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ error: "Invalid ID" });
-      console.log("requeist param ->", req.body)
     const updated = await Parameter.findByIdAndUpdate(
       id,
       {

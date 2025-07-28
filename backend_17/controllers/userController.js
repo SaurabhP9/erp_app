@@ -35,7 +35,6 @@ exports.createUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("frontend data ", req.body);
     const newUser = new User({
       name,
       email,
@@ -76,7 +75,6 @@ exports.getAllUsersByRole = async (req, res) => {
 
     if (["admin", "employee", "client"].includes(role)) {
       const users = await User.find({ role }).lean();
-      console.log(users);
       return res.json(users);
     }
 

@@ -3,7 +3,6 @@ const Department = require("../models/department");
 // Create Department
 exports.createDepartment = async (req, res) => {
   try {
-    console.log("created Department ", req.body)
     const department = await Department.create({
       department: req.body.department,
       createdBy: req.body.createdBy,

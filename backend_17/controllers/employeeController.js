@@ -8,8 +8,6 @@ exports.createEmployee = async (req, res) => {
       return res.status(400).json({ error: "Name and Email are required" });
     }
 
-    console.log("Employee body -> ", req.body);
-
     const newEmployee = new Employee({
       name,
       email,
@@ -17,10 +15,7 @@ exports.createEmployee = async (req, res) => {
       department,
       projectIds
     });
-
     const savedEmployee = await newEmployee.save();
-    console.log("Employee created -> ", savedEmployee);
-
     res.status(201).json(savedEmployee);
   } catch (err) {
     console.error("Error creating employee:", err);

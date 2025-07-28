@@ -30,7 +30,6 @@ export default function ClientTimeSheet() {
 
       try {
         const data = await getTimesheetByUserId(userId);
-        console.log("user client time shee", data)
         setTimesheetData(data);
       } catch (err) {
         console.error("Failed to fetch timesheet:", err);

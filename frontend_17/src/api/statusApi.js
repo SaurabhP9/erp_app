@@ -6,9 +6,7 @@ export const getAllStatuses = async () => {
 };
 
 export const createStatus = async (statusData) => {
-    console.log("lof -", statusData)
   const res = await api.post("/api/status/create", statusData);
-  console.log("response", res.data);
   return res.data;
 };
 

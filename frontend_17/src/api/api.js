@@ -57,7 +57,7 @@
 import axios from "axios";
 
 // This is the CRITICAL CHANGE:
-export const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL;
+export const BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || "http://localhost:8081";
 
 // You can add a console log here to verify it during development/build
 console.log("API Base URL used:", BASE_URL);

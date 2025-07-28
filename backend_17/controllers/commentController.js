@@ -3,11 +3,8 @@ const Comment = require("../models/comment");
 // CREATE comment
 exports.createComment = async (req, res) => {
   try {
-    console.log("new comment req body ", req.body);
     const newComment = await Comment.create(req.body);
-    console.log("new comment ", newComment);
     const populated = await newComment.populate("userId", "name email");
-    console.log("new comment populated  ", populated);
     res.status(201).json(populated);
   } catch (err) {
     console.error("Error creating comment:", err);

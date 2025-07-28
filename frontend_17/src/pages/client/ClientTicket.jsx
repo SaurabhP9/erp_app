@@ -190,9 +190,7 @@ const Client_Ticket = () => {
     }
 
     if (name === "categoryId") {
-      console.log(value);
       const selected = categories.find((c) => c._id === value);
-      console.log(selected);
       setFormData((prev) => ({
         ...prev,
         categoryId: selected?._id || "",

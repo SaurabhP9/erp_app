@@ -7,7 +7,6 @@ export const getAllProjects = async () => {
 
 export const createProject = async (projectData) => {
   const res = await api.post("/api/project/create", projectData);
-  console.log(res.body);
   return res.data;
 };
 

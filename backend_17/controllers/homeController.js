@@ -86,20 +86,23 @@ exports.getTicketSummaryByRole = async (req, res) => {
           (t) => t.userId?.toString() === user._id.toString()
         );
 
+        const handoverCount = allTickets.filter((t) =>
+          t.handoverHistory?.some(
+            (h) => h.fromEmployeeId?.toString() === user._id.toString()
+          )
+        ).length;
+
         const ticketStatus = {
           open: userTickets.filter((t) => t.mainStatus === "open").length,
           closed: userTickets.filter((t) => t.mainStatus === "closed").length,
-          handover: userTickets.filter((t) => t.mainStatus === "handover")
-            .length,
-          inProgress: userTickets.filter((t) => t.mainStatus === "inProcess")
-            .length,
+          handover: handoverCount,
+          inProgress: userTickets.filter((t) => t.mainStatus === "inProcess").length
         };
 
         return {
           userId: user._id,
           name: user.name,
           email: user.email,
-          project: user.projectId,
           ticketStatus,
         };
       })

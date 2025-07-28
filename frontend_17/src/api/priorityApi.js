@@ -6,9 +6,7 @@ export const getAllPriorities = async () => {
 };
 
 export const createPriority = async (data) => {
-  console.log("data", data);
   const res = await api.post("/api/priority/create", data);
-  console.log("respinse", res);
   return res.data;
 };
 

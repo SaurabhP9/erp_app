@@ -103,7 +103,6 @@ export default function CategoryList() {
 
   const handleDelete = async (index) => {
     try {
-      console.log("category deelete index ", categories[index]);
       const category = categories[index];
       await deleteCategory(category._id);
       const updated = categories.filter((_, i) => i !== index);
