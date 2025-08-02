@@ -60,6 +60,7 @@ app.use("/uploads", express.static("uploads"));
 
 //CRON
 app.use("/api/cron", cronRoutes);
+app.use("/health",)
 
 app.use("/api", require("./routes/tokenRoutes"));
 app.use("/api/priority", require("./routes/priorityRoutes"));

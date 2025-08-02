@@ -4,9 +4,9 @@ const {triggerEmailForEmployeeTimeSheet} = require("../controllers/timesheetCont
 
 // Secure using secret key
 router.get("/daily-timesheet-emails", async (req, res) => {
-  if (req.query.key !== process.env.CRON_SECRET) {
-    return res.status(403).send("Forbidden: Invalid API Key");
-  }
+  // if (req.query.key !== process.env.CRON_SECRET) {
+  //   return res.status(403).send("Forbidden: Invalid API Key");
+  // }
 
   try {
     await triggerEmailForEmployeeTimeSheet();
