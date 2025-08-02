@@ -1,0 +1,14 @@
+name: Trigger Daily Timesheet Email
+
+on:
+  schedule:
+    - cron: '30 15 * * *'  # 9:00 PM IST daily
+
+jobs:
+  call-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl the Render API endpoint
+        run: |
+          curl -X POST https://your-app-name.onrender.com/api/timesheet/trigger-email \
+          -H "Content-Type: application/json"
