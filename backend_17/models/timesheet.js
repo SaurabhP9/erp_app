@@ -7,10 +7,12 @@ const TimesheetSchema = new mongoose.Schema(
     ticket: { type: String, required: true },
     ticketNo: { type: String, required: true },
     subject: { type: String, required: true },
+    project: { type: String, required: true }, 
     issuedDate: { type: String },
     task: { type: String, required: true },
     date: { type: String, required: true },
     workingTime: { type: Number, required: true },
+    previousWork: { type: Number },
     totalWork: { type: Number },
   },
   { timestamps: true }

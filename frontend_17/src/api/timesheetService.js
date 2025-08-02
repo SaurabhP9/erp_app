@@ -19,7 +19,9 @@ export const getTimesheetByEmployeeId = async (empId) => {
 
 export const addTimesheet = async (formData) => {
   try {
+    console.log(formData);
     const res = await api.post("/api/timesheet/add", formData);
+    console.log("Res", res.data);
     return res.data;
   } catch (err) {
     console.error(

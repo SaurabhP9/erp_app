@@ -22,6 +22,8 @@ const timesheetRoutes = require("./routes/timesheetRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 const commentRoutes = require("./routes/commentRoutes");
 
+const cronRoutes = require("./routes/cronRoutes");
+
 const app = express();
 
 // Middleware
@@ -55,6 +57,10 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
 // Routes
+
+//CRON
+app.use("/api/cron", cronRoutes);
+
 app.use("/api", require("./routes/tokenRoutes"));
 app.use("/api/priority", require("./routes/priorityRoutes"));
 app.use("/api/email", emailRoutes);

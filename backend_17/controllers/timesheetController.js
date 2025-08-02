@@ -1,6 +1,8 @@
 const Ticket = require("../models/ticket");
 const User = require("../models/user");
 const Timesheet = require("../models/timesheet");
+const sendEmail = require("../utils/sendMail");
+const dayjs = require("dayjs");
 
 exports.getTimesheetFromTickets = async (req, res) => {
   try {
@@ -299,5 +301,107 @@ exports.fetchTimesheetsWithTicketStatus = async (req, res) => {
   } catch (err) {
     console.error("Error in aggregation:", err);
     res.status(500).json({ message: "Failed to fetch enriched timesheets." });
+  }
+};
+exports.triggerEmailForEmployeeTimeSheet = async () => {
+  try {
+    const today = dayjs().format("YYYY-MM-DD");
+
+    const employeeIds = await Timesheet.distinct("employeeId", { date: today });
+
+    for (const empId of employeeIds) {
+      const timesheets = await Timesheet.find({ employeeId: empId, date: today }); // console.log("Subject =? ", subject);
+      // console.log("plaint text ", plainText);
+      console.log(timesheets);
+      if (timesheets.length === 0) continue;
+
+      const user = await User.findById(empId);
+      if (!user?.email) continue;
+
+      const totalHoursDecimal = timesheets.reduce((sum, t) => sum + (t.workingTime || 0), 0);
+      const totalHours = `${Math.floor(totalHoursDecimal)} hr ${Math.round((totalHoursDecimal % 1) * 60)} min`;
+
+      const submittedRows = timesheets.map((t) => `
+        <tr>
+          <td>${t.ticketNo || "-"}</td>
+          <td>${t.subject || "-"}</td>
+          <td>${t.project || "-"}</td>
+          <td>${t.issue || "-"}</td>
+          <td>${(t.workingTime || 0).toFixed(2)} hr</td>
+        </tr>
+      `).join("");
+
+      const statusRows = timesheets.map((t) => `
+        <tr>
+          <td>${dayjs(t.updatedAt).format("DD-MM-YYYY HH:mm")}</td>
+          <td>${t.assigneeName || "-"}</td>
+          <td>${t.subStatus || "-"}</td>
+          <td>${t.mainStatus || "-"}</td>
+        </tr>
+      `).join("");
+
+      const html = `
+      <div style="font-family: Arial, sans-serif; padding: 15px;">
+        <h2 style="color: #333;">🕒 Timesheet Summary for ${today}</h2>
+        <p><strong>Name:</strong> ${user.name}</p>
+        <p><strong>Total Time:</strong> ${totalHours}</p>
+    
+        <div style="overflow-x: auto;">
+          <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; min-width: 1000px; width: 100%;">
+            <thead style="background-color: #f0f0f0;">
+              <tr style="text-align: left;">
+                <th>#</th>
+                <th>Project</th>
+                <th>Ticket Id</th>
+                <th>Subject</th>
+                <th>Issue</th>
+                <th>Task</th>
+                <th>Submitted Time</th>
+                <th>Last Updated</th>
+                <th>Previous Working Time</th>
+                <th>Today's Working Time</th>
+                <th>Total Time (hr)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${timesheets
+                .map((t, index) => {
+                  return `
+                    <tr>
+                      <td>${index + 1}</td>
+                      <td>${t.project || "-"}</td>
+                      <td>${t.ticketNo || "-"}</td>
+                      <td>${t.subject || "-"}</td>
+                      <td>${t.issuedDate || "-"}</td>
+                      <td>${t.task || "-"}</td>
+
+                      <td>${dayjs(t.createdAt).format("DD-MM-YYYY HH:mm")}</td>
+                      <td>${dayjs(t.updatedAt).format("DD-MM-YYYY HH:mm")}</td>
+
+                      <td>${t.previousWork || "—"}</td>
+                      <td>${(t.workingTime || 0).toFixed(2)}</td>
+                      <td>${t.totalWork || "—"}</td>
+                    </tr>`;
+                })
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+    
+        <p style="margin-top: 20px; color: #777;">
+          This is an automated email. Please do not reply.
+        </p>
+      </div>
+    `;    
+
+      const subject = `Timesheet Summary of ${user.name} for ${today}`;
+      const plainText = `Hi ${user.name}, your total time logged today is ${totalHours}.`;
+      console.log(html);
+      await sendEmail(user.email, subject, plainText, html);
+      console.log(`Email sent to ${user.email}`);
+    }
+  } catch (err) {
+    console.error("Error sending timesheet emails:", err);
+    throw err;
   }
 };

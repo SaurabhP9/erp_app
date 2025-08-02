@@ -43,6 +43,7 @@ export default function MyTimesheet() {
     workingTime: "", // This will now store HH:MM
     previousWork: "", // Still stored as decimal hours for calculation
     totalWork: "", // Still stored as decimal hours for calculation
+    project: ""
   });
 
   const userId = localStorage.getItem("userId");
@@ -60,7 +61,7 @@ export default function MyTimesheet() {
         setTickets(filterTickets);
         setFormData((prev) => ({
           ...prev,
-          employee: userName || "Current User",
+          employee: userName,
         }));
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -107,8 +108,8 @@ export default function MyTimesheet() {
 
         const issuedDateFormatted = selected.createdTime
           ? dayjs(selected.createdTime, "DD MMM YYYY, hh:mm a").format(
-              "YYYY-MM-DD"
-            )
+            "YYYY-MM-DD"
+          )
           : "";
 
         setFormData((prev) => ({
@@ -120,6 +121,7 @@ export default function MyTimesheet() {
           previousWork: previousWorkDecimal.toFixed(2), // Store as decimal for calculations
           workingTime: "", // Reset today's working time when ticket changes
           totalWork: previousWorkDecimal.toFixed(2), // Initialize total work with previous work
+          project: selected.project || ""
         }));
       }
     } else if (name === "workingTime") {
@@ -229,6 +231,8 @@ export default function MyTimesheet() {
         date: formData.date,
         workingTime: convertHHMMToDecimal(formData.workingTime), // Convert HH:MM to decimal for backend
         totalWork: parseFloat(formData.totalWork), // totalWork is already in decimal
+        project: formData.project,
+        previousWork: parseFloat(formData.previousWork),
       };
 
       await addTimesheet(payload);
@@ -251,7 +255,7 @@ export default function MyTimesheet() {
     } catch (err) {
       alert(
         "Error submitting timesheet: " +
-          (err.response?.data?.message || err.message)
+        (err.response?.data?.message || err.message)
       );
       console.error("Error submitting timesheet:", err);
     }
@@ -358,6 +362,15 @@ export default function MyTimesheet() {
                 disabled
                 fullWidth
               />
+
+              <TextField
+                label="Project"
+                name="project"
+                value={formData.project}
+                disabled
+                fullWidth
+              />
+
               <TextField
                 label="Issued Date"
                 name="issuedDate"
