@@ -10,5 +10,5 @@ jobs:
     steps:
       - name: Curl the Render API endpoint
         run: |
-          curl -X POST https://your-app-name.onrender.com/api/timesheet/trigger-email \
+          curl -X POST https://erp-app-test.onrender.com/api/timesheet/trigger-email \
           -H "Content-Type: application/json"
