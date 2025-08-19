@@ -310,7 +310,10 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     const employeeIds = await Timesheet.distinct("employeeId", { date: today });
 
     for (const empId of employeeIds) {
-      const timesheets = await Timesheet.find({ employeeId: empId, date: today }); // console.log("Subject =? ", subject);
+      const timesheets = await Timesheet.find({
+        employeeId: empId,
+        date: today,
+      }); // console.log("Subject =? ", subject);
       // console.log("plaint text ", plainText);
       console.log(timesheets);
       if (timesheets.length === 0) continue;
@@ -318,10 +321,17 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
       const user = await User.findById(empId);
       if (!user?.email) continue;
 
-      const totalHoursDecimal = timesheets.reduce((sum, t) => sum + (t.workingTime || 0), 0);
-      const totalHours = `${Math.floor(totalHoursDecimal)} hr ${Math.round((totalHoursDecimal % 1) * 60)} min`;
+      const totalHoursDecimal = timesheets.reduce(
+        (sum, t) => sum + (t.workingTime || 0),
+        0
+      );
+      const totalHours = `${Math.floor(totalHoursDecimal)} hr ${Math.round(
+        (totalHoursDecimal % 1) * 60
+      )} min`;
 
-      const submittedRows = timesheets.map((t) => `
+      const submittedRows = timesheets
+        .map(
+          (t) => `
         <tr>
           <td>${t.ticketNo || "-"}</td>
           <td>${t.subject || "-"}</td>
@@ -329,16 +339,22 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
           <td>${t.issue || "-"}</td>
           <td>${(t.workingTime || 0).toFixed(2)} hr</td>
         </tr>
-      `).join("");
+      `
+        )
+        .join("");
 
-      const statusRows = timesheets.map((t) => `
+      const statusRows = timesheets
+        .map(
+          (t) => `
         <tr>
           <td>${dayjs(t.updatedAt).format("DD-MM-YYYY HH:mm")}</td>
           <td>${t.assigneeName || "-"}</td>
           <td>${t.subStatus || "-"}</td>
           <td>${t.mainStatus || "-"}</td>
         </tr>
-      `).join("");
+      `
+        )
+        .join("");
 
       const html = `
       <div style="font-family: Arial, sans-serif; padding: 15px;">
@@ -392,12 +408,20 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
           This is an automated email. Please do not reply.
         </p>
       </div>
-    `;    
+    `;
 
       const subject = `Timesheet Summary of ${user.name} for ${today}`;
       const plainText = `Hi ${user.name}, your total time logged today is ${totalHours}.`;
       console.log(html);
-      await sendEmail(user.email, subject, plainText, html);
+      const ccEmails = ["patharesaurabh450@gmail.com"];
+      // await sendEmail(user.email, subject, plainText, html, ccEmails);
+      await sendEmail(
+        "saurabh125pathare@gmail.com",
+        subject,
+        plainText,
+        html,
+        ccEmails
+      );
       console.log(`Email sent to ${user.email}`);
     }
   } catch (err) {
