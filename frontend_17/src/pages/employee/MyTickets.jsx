@@ -263,8 +263,9 @@ const E_Ticket = () => {
       setDepartments(dept); // Fixed: setDepartments is now defined
       setCategories(cat);
       setPriorities(prio);
-      const filterEmp = emp.filter((e) => e._id !== userId);
-      setEmployees(filterEmp);
+      // const filterEmp = emp.filter((e) => e._id !== userId);
+      // setEmployees(filterEmp);
+      setEmployees(emp);
       setUsers(users);
       setStatus(statusList);
     } catch (err) {
@@ -699,7 +700,7 @@ const E_Ticket = () => {
       comment: newComment,
       visibility: isPublic ? "public" : "internal",
     };
-    
+
     try {
       await createComment(payload);
       setNewComment("");
