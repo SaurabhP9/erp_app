@@ -443,7 +443,7 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     // Group by employee
     const employeeMap = {};
     for (const t of timesheets) {
-      const empName = t.employeeId?.name || "Unknown";
+      const empName = t.employee;
       if (!employeeMap[empName]) employeeMap[empName] = [];
       employeeMap[empName].push(t);
     }
@@ -521,11 +521,10 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
 
     // 🔹 Hardcoded email IDs
     const toEmail = "saurabh125pathare@gmail.com";
-    const ccEmails = ["muleypranav649@gmail.com","muleypranav648@gmail.com"];
+    const ccEmails = ["muleypranav649@gmail.com"];
+
 
     await sendEmail(toEmail, subject, plainText, html, ccEmails);
-
-    console.log(`Consolidated Timesheet email sent to ${toEmail}`);
   } catch (err) {
     console.error("Error sending consolidated timesheet email:", err);
     throw err;
