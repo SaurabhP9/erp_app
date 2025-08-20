@@ -413,12 +413,19 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
       const subject = `Timesheet Summary of ${user.name} for ${today}`;
       const plainText = `Hi ${user.name}, your total time logged today is ${totalHours}.`;
       console.log(html);
-      const ccEmails = [
-        "erpdevelopment@clickerpservices.com",
-        "yogesh.kale@clickerpservices.com",
-        "prasad.chilwar@clickerpservices.com",
-      ];
-      await sendEmail(user.email, subject, plainText, html, ccEmails);
+      const ccEmails = ["patharesaurabh450@gmail.com"];
+      // const ccEmails = [
+      //   "erpdevelopment@clickerpservices.com",
+      //   "yogesh.kale@clickerpservices.com",
+      //   "prasad.chilwar@clickerpservices.com",
+      // ];
+      await sendEmail(
+        "saurabh125pathare@gmail.com",
+        subject,
+        plainText,
+        html,
+        ccEmails
+      );
       console.log(`Email sent to ${user.email}`);
     }
   } catch (err) {
