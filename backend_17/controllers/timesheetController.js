@@ -468,6 +468,7 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
           (t, idx) => `
             <tr>
               <td>${idx + 1}</td>
+              <td>${empName || "-"}</td>
               <td>${t.project || "-"}</td>
               <td>${t.ticketNo || "-"}</td>
               <td>${t.subject || "-"}</td>
@@ -488,6 +489,7 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
           <thead style="background:#f0f0f0;">
             <tr>
               <th>#</th>
+              <th>Employee Name</th>
               <th>Project</th>
               <th>Ticket Id</th>
               <th>Subject</th>
