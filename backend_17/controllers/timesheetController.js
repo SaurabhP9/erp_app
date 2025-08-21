@@ -362,7 +362,7 @@ exports.fetchTimesheetsWithTicketStatus = async (req, res) => {
 //         <h2 style="color: #333;">🕒 Timesheet Summary for ${today}</h2>
 //         <p><strong>Name:</strong> ${user.name}</p>
 //         <p><strong>Total Time:</strong> ${totalHours}</p>
-    
+
 //         <div style="overflow-x: auto;">
 //           <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; min-width: 1000px; width: 100%;">
 //             <thead style="background-color: #f0f0f0;">
@@ -404,7 +404,7 @@ exports.fetchTimesheetsWithTicketStatus = async (req, res) => {
 //             </tbody>
 //           </table>
 //         </div>
-    
+
 //         <p style="margin-top: 20px; color: #777;">
 //           This is an automated email. Please do not reply.
 //         </p>
@@ -433,7 +433,9 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     const today = dayjs().format("YYYY-MM-DD");
 
     // Get all timesheets of today and populate employee
-    const timesheets = await Timesheet.find({ date: today }).populate("employeeId");
+    const timesheets = await Timesheet.find({ date: today }).populate(
+      "employeeId"
+    );
 
     if (!timesheets || timesheets.length === 0) {
       console.log("No timesheets found for today");
@@ -520,9 +522,11 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     const plainText = `Consolidated timesheet summary for ${today}`;
 
     // 🔹 Hardcoded email IDs
-    const toEmail = "saurabh125pathare@gmail.com";
-    const ccEmails = ["muleypranav649@gmail.com"];
-
+    const toEmail = "development@clickerpservices.com";
+    const ccEmails = [
+      "yogesh.kale@clickerpservices.com",
+      "prasad.chilwar@clickerpservices.com",
+    ];
 
     await sendEmail(toEmail, subject, plainText, html, ccEmails);
   } catch (err) {
