@@ -14,6 +14,7 @@ const TimesheetSchema = new mongoose.Schema(
     workingTime: { type: Number, required: true },
     previousWork: { type: Number },
     totalWork: { type: Number },
+    targetDate: {type: Date}
   },
   { timestamps: true }
 );

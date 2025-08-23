@@ -82,6 +82,7 @@ const initialFormData = {
   issue: "",
   mainStatus: "",
   attachments: [],
+  targetDate: "",
 };
 
 dayjs.extend(utc);
@@ -151,12 +152,12 @@ const Ticket = () => {
 
   const formatToIST = (dateString) => {
     const parsed = dayjs(dateString);
-  
+
     // If it's already in local/IST, don't shift it again
     const istTime = parsed.tz("Asia/Kolkata");
-  
+
     return istTime.format("DD MMM YYYY hh:mm A");
-  };  
+  };
 
   const cellStyle = {
     border: "1px solid #ddd",
@@ -406,10 +407,22 @@ const Ticket = () => {
           ];
 
           updatedHistory.forEach((entry, index) => {
-            form.append(`handoverHistory[${index}].fromEmployeeId`, entry.fromEmployeeId);
-            form.append(`handoverHistory[${index}].toEmployeeId`, entry.toEmployeeId);
-            form.append(`handoverHistory[${index}].reassignedBy`, entry.reassignedBy);
-            form.append(`handoverHistory[${index}].reassignedAt`, entry.reassignedAt);
+            form.append(
+              `handoverHistory[${index}].fromEmployeeId`,
+              entry.fromEmployeeId
+            );
+            form.append(
+              `handoverHistory[${index}].toEmployeeId`,
+              entry.toEmployeeId
+            );
+            form.append(
+              `handoverHistory[${index}].reassignedBy`,
+              entry.reassignedBy
+            );
+            form.append(
+              `handoverHistory[${index}].reassignedAt`,
+              entry.reassignedAt
+            );
           });
         }
 
@@ -426,9 +439,10 @@ const Ticket = () => {
           const reassignmentComment = {
             ticketId: editId,
             userId: currentUserId,
-            comment: `Ticket reassigned from ${users.find((u) => u._id === originalTicket.employeeId)?.name ||
+            comment: `Ticket reassigned from ${
+              users.find((u) => u._id === originalTicket.employeeId)?.name ||
               "Unassigned"
-              } to ${selectedEmployee?.name || "Unassigned"}.`,
+            } to ${selectedEmployee?.name || "Unassigned"}.`,
             visibility: "internal",
           };
           await createComment(reassignmentComment);
@@ -554,32 +568,41 @@ const Ticket = () => {
     const htmlContent = `
         <div style="background-color: #fdf8e4; padding: 40px 0;">
           <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-            <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
-      },</p>
+            <p style="font-size: 16px;">Dear ${
+              assignedEmployee?.name || "Team"
+            },</p>
     
             <p style="font-size: 15px;">
-              ${isEdit
-        ? "The following ticket has been updated"
-        : "A new ticket has been assigned to you"
-      }. Please review the details below and take appropriate action.
+              ${
+                isEdit
+                  ? "The following ticket has been updated"
+                  : "A new ticket has been assigned to you"
+              }. Please review the details below and take appropriate action.
             </p>
     
             <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
             <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
-      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.name
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.subject
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.project
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.category
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.priority
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.issue
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.mainStatus || "Open"
+              }</td></tr>
             </table>
     
             <div style="margin-top: 30px; text-align: center;">
@@ -600,8 +623,9 @@ const Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
-        }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
+        createdOrUpdated.name
+      }`,
       html: htmlContent,
     });
   }
@@ -623,6 +647,7 @@ const Ticket = () => {
       employeeId: ticket.employeeId, // Keep this for editing assignee
       employee: ticket.employee, // Keep this for editing assignee
       attachments: [],
+      targetDate: ticket.targetDate || "",
     });
     setEditMode(true);
     setEditId(ticket._id);
@@ -644,14 +669,14 @@ const Ticket = () => {
 
   const submitComment = async () => {
     if (!newComment.trim()) return;
-    
+
     const payload = {
       ticketId: viewTicket._id,
       userId: localStorage.getItem("userId"),
       comment: newComment,
       visibility: isPublic ? "public" : "internal",
     };
-    
+
     try {
       await createComment(payload);
       setNewComment("");
@@ -909,6 +934,7 @@ const Ticket = () => {
                         "Project",
                         "Issue",
                         "Submitted Time",
+                        "Target Date",
                         "Last Updated",
                         "Assignee",
                         "Sub Status",
@@ -923,30 +949,29 @@ const Ticket = () => {
                             fontWeight: "bold",
                             border: "1px solid #ddd",
                             textAlign: "center",
-                            whiteSpace: "normal",
-                            wordBreak: "break-word",
+                            whiteSpace: "nowrap", // ✅ keep header text in one line
+                            overflow: "hidden",
+                            textOverflow: "ellipsis", // ✅ truncate if too long
                             fontSize: "0.95rem",
                             cursor: "pointer",
-                            width:
+                            minWidth:
                               idx === 0
-                                ? "3px"
+                                ? "5px"
                                 : idx === 1
-                                  ? "10px"
-                                  : idx === 2
-                                    ? "50px"
-                                    : idx === 3
-                                      ? "35px"
-                                      : idx === 4
-                                        ? "200px"
-                                        : idx === 5 || idx === 6
-                                          ? "25px"
-                                          : idx === 8
-                                            ? "15px"
-                                            : idx === 7 || idx === 9
-                                              ? "25px"
-                                              : idx === 10
-                                                ? "15px"
-                                                : "auto",
+                                ? "10px"
+                                : idx === 2
+                                ? "20px"
+                                : idx === 3
+                                ? "20px"
+                                : idx === 4
+                                ? "40px"
+                                : idx === 5 || idx === 6
+                                ? "25px"
+                                : idx === 7 || idx === 8 || idx === 9
+                                ? "25px"
+                                : idx === 10
+                                ? "15px"
+                                : "auto", // ✅ minimum sensible widths
                           }}
                         >
                           {label}
@@ -983,10 +1008,19 @@ const Ticket = () => {
                           <TableCell sx={cellStyle}>{ticket.project}</TableCell>
                           <TableCell sx={cellStyle}>{ticket.issue}</TableCell>
                           <TableCell sx={cellStyle}>
-                            {formatToIST(ticket.createdTime)}
+                            {ticket.createdTime
+                              ? dayjs(ticket.createdTime).format("DD MMM YYYY")
+                              : "—"}
                           </TableCell>
                           <TableCell sx={cellStyle}>
-                            {formatToIST(ticket.updatedTime)}
+                            {ticket.targetDate
+                              ? dayjs(ticket.targetDate).format("DD MMM YYYY")
+                              : "—"}
+                          </TableCell>
+                          <TableCell sx={cellStyle}>
+                            {ticket.updatedTime
+                              ? dayjs(ticket.updatedTime).format("DD MMM YYYY")
+                              : "—"}
                           </TableCell>
                           <TableCell sx={cellStyle}>
                             {ticket.employee || "Unassigned"}
@@ -1083,6 +1117,18 @@ const Ticket = () => {
               </Grid>
               <Grid item>
                 <TextField
+                  fullWidth
+                  required={!formData.targetDate} // required only if empty
+                  type="date"
+                  label="Target Date"
+                  name="targetDate"
+                  value={formData.targetDate || ""}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item>
+                <TextField
                   select
                   fullWidth
                   required
@@ -1150,8 +1196,8 @@ const Ticket = () => {
                     employees.find((e) => e._id === formData.employeeId) || ""
                   }
                   onChange={handleChange}
-                // This field is required when creating a ticket, but optional for reassignment logic if you handle "unassign"
-                // required={!editMode} // Uncomment if you want it required only for new tickets
+                  // This field is required when creating a ticket, but optional for reassignment logic if you handle "unassign"
+                  // required={!editMode} // Uncomment if you want it required only for new tickets
                 >
                   <MenuItem value="">Select</MenuItem>
                   {employees.map((emp) => (
@@ -1194,7 +1240,11 @@ const Ticket = () => {
 
               <Grid item>
                 <Box mt={2} display="flex" gap={2}>
-                  <Button type="submit" variant="contained" disabled={isSubmitting}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={isSubmitting}
+                  >
                     {isSubmitting ? "Submitting..." : "Submit"}
                   </Button>
                   <Button variant="outlined" onClick={() => setShowForm(false)}>
@@ -1269,10 +1319,7 @@ const Ticket = () => {
                   ["Priority", viewTicket.priority],
                   ["Project", viewTicket.project],
                   ["Category", viewTicket.category],
-                  [
-                    "Submitted",
-                    formatToIST(viewTicket.createdTime),
-                  ], // Use createdTime for submitted time
+                  ["Submitted", formatToIST(viewTicket.createdTime)], // Use createdTime for submitted time
                   ["Assigned To", viewTicket.employee || "Not Assigned"],
                 ].map(([label, value], i) => (
                   <Box key={i} sx={{ width: "40%", mb: 1 }}>

@@ -38,16 +38,18 @@ export default function MyTimesheet() {
     ticketNo: "",
     subject: "",
     issuedDate: "",
+    targetDate: "",
     task: "",
     date: "",
     workingTime: "", // This will now store HH:MM
     previousWork: "", // Still stored as decimal hours for calculation
     totalWork: "", // Still stored as decimal hours for calculation
-    project: ""
+    project: "",
   });
 
   const userId = localStorage.getItem("userId");
   const userName = localStorage.getItem("username");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,6 +57,7 @@ export default function MyTimesheet() {
 
       try {
         const timesheets = await getTimesheetByEmployeeId(userId);
+        console.log("timesheet is ", timesheetData);
         const tickets = await getTicketsByEmployeeId(userId);
         const filterTickets = tickets.filter((t) => t.status !== "close");
         setTimesheetData(timesheets);
@@ -101,15 +104,18 @@ export default function MyTimesheet() {
     if (name === "ticket") {
       const selected = tickets.find((t) => t._id === value);
       if (selected) {
-        // Calculate previousWork in decimal hours
         const previousWorkDecimal = timesheetData
           .filter((row) => row.ticket === value)
-          .reduce((sum, row) => sum + parseFloat(row.workingTime || 0), 0); // Assuming row.workingTime from backend is decimal
+          .reduce((sum, row) => sum + parseFloat(row.workingTime || 0), 0);
 
         const issuedDateFormatted = selected.createdTime
           ? dayjs(selected.createdTime, "DD MMM YYYY, hh:mm a").format(
-            "YYYY-MM-DD"
-          )
+              "YYYY-MM-DD"
+            )
+          : "";
+
+        const targetDateFormatted = selected.targetDate
+          ? dayjs(selected.targetDate).format("YYYY-MM-DD")
           : "";
 
         setFormData((prev) => ({
@@ -118,10 +124,11 @@ export default function MyTimesheet() {
           ticketNo: selected.ticketNo,
           subject: selected.subject || "",
           issuedDate: issuedDateFormatted,
-          previousWork: previousWorkDecimal.toFixed(2), // Store as decimal for calculations
-          workingTime: "", // Reset today's working time when ticket changes
-          totalWork: previousWorkDecimal.toFixed(2), // Initialize total work with previous work
-          project: selected.project || ""
+          targetDate: targetDateFormatted, // ✅ auto-fill from Ticket
+          previousWork: previousWorkDecimal.toFixed(2),
+          workingTime: "",
+          totalWork: previousWorkDecimal.toFixed(2),
+          project: selected.project || "",
         }));
       }
     } else if (name === "workingTime") {
@@ -227,6 +234,7 @@ export default function MyTimesheet() {
         ticketNo: formData.ticketNo,
         subject: formData.subject,
         issuedDate: formData.issuedDate,
+        targetDate: formData.targetDate,
         task: formData.task,
         date: formData.date,
         workingTime: convertHHMMToDecimal(formData.workingTime), // Convert HH:MM to decimal for backend
@@ -246,6 +254,7 @@ export default function MyTimesheet() {
         ticket: "",
         subject: "",
         issuedDate: "",
+        targetDate: "",
         task: "",
         date: "",
         workingTime: "", // Reset to empty string for HH:MM
@@ -255,7 +264,7 @@ export default function MyTimesheet() {
     } catch (err) {
       alert(
         "Error submitting timesheet: " +
-        (err.response?.data?.message || err.message)
+          (err.response?.data?.message || err.message)
       );
       console.error("Error submitting timesheet:", err);
     }
@@ -294,6 +303,7 @@ export default function MyTimesheet() {
                 ticket: "",
                 subject: "",
                 issuedDate: "",
+                targetDate: "",
                 task: "",
                 date: "",
                 workingTime: "",
@@ -348,13 +358,16 @@ export default function MyTimesheet() {
                   onChange={handleFormChange}
                   required
                 >
-                  {tickets.map((t) => (
-                    <MenuItem key={t._id} value={t._id}>
-                      {t.ticketNo} - {t.subject}
-                    </MenuItem>
-                  ))}
+                  {tickets
+                    .filter((t) => t.mainStatus?.toLowerCase() !== "closed") // exclude closed
+                    .map((t) => (
+                      <MenuItem key={t._id} value={t._id}>
+                        {t.ticketNo} - {t.subject}
+                      </MenuItem>
+                    ))}
                 </Select>
               </FormControl>
+
               <TextField
                 label="Subject"
                 name="subject"
@@ -378,6 +391,15 @@ export default function MyTimesheet() {
                 value={formData.issuedDate}
                 InputLabelProps={{ shrink: true }}
                 disabled
+                fullWidth
+              />
+              <TextField
+                label="Target Date"
+                name="targetDate"
+                type="date"
+                value={formData.targetDate}
+                InputLabelProps={{ shrink: true }}
+                disabled // ✅ read-only in Timesheet
                 fullWidth
               />
               <TextField
@@ -459,6 +481,7 @@ export default function MyTimesheet() {
                     "Ticket",
                     "Subject",
                     "Issued Date",
+                    "Target Date",
                     "Task",
                     "Date",
                     "Previous Working Time",
@@ -512,6 +535,11 @@ export default function MyTimesheet() {
                         <TableCell sx={cellStyle}>
                           {row.issuedDate
                             ? dayjs(row.issuedDate).format("DD/MM/YYYY")
+                            : "-"}
+                        </TableCell>
+                        <TableCell sx={cellStyle}>
+                          {row.targetDate
+                            ? dayjs(row.targetDate).format("DD/MM/YYYY")
                             : "-"}
                         </TableCell>
                         <TableCell sx={cellStyle}>{row.task}</TableCell>

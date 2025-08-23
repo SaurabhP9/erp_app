@@ -234,6 +234,7 @@ exports.getTimesheetsByEmployee = async (req, res) => {
     const timesheets = await Timesheet.find({ employeeId: id }).sort({
       createdAt: -1,
     });
+
     res.json(timesheets);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch timesheets", error: err });
