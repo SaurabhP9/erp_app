@@ -61,15 +61,13 @@ export default function MyTimesheet() {
         const tickets = await getTicketsByEmployeeId(userId);
 
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split("T")[0]; // "2025-08-25"
+
         const filterTickets = tickets.filter((t) => {
-          if (t.status !== "closed") return true; // keep non-closed tickets
+          if (t.status !== "closed") return true;
 
-          // if closed → check updatedTime
-          const updated = new Date(t.updatedTime);
-          updated.setHours(0, 0, 0, 0);
-
-          return updated.getTime() === today.getTime(); // keep if closed today
+          const updatedStr = new Date(t.updatedTime).toISOString().split("T")[0];
+          return updatedStr === todayStr; // keep closed if updated today
         });
 
         setTimesheetData(timesheets);
