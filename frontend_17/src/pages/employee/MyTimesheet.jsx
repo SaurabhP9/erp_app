@@ -59,7 +59,19 @@ export default function MyTimesheet() {
         const timesheets = await getTimesheetByEmployeeId(userId);
         console.log("timesheet is ", timesheetData);
         const tickets = await getTicketsByEmployeeId(userId);
-        const filterTickets = tickets.filter((t) => t.status !== "close");
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const filterTickets = tickets.filter((t) => {
+          if (t.status !== "closed") return true; // keep non-closed tickets
+
+          // if closed → check updatedTime
+          const updated = new Date(t.updatedTime);
+          updated.setHours(0, 0, 0, 0);
+
+          return updated.getTime() === today.getTime(); // keep if closed today
+        });
+
         setTimesheetData(timesheets);
         setTickets(filterTickets);
         setFormData((prev) => ({
@@ -110,8 +122,8 @@ export default function MyTimesheet() {
 
         const issuedDateFormatted = selected.createdTime
           ? dayjs(selected.createdTime, "DD MMM YYYY, hh:mm a").format(
-              "YYYY-MM-DD"
-            )
+            "YYYY-MM-DD"
+          )
           : "";
 
         const targetDateFormatted = selected.targetDate
@@ -264,7 +276,7 @@ export default function MyTimesheet() {
     } catch (err) {
       alert(
         "Error submitting timesheet: " +
-          (err.response?.data?.message || err.message)
+        (err.response?.data?.message || err.message)
       );
       console.error("Error submitting timesheet:", err);
     }
@@ -359,7 +371,6 @@ export default function MyTimesheet() {
                   required
                 >
                   {tickets
-                    .filter((t) => t.mainStatus?.toLowerCase() !== "closed") // exclude closed
                     .map((t) => (
                       <MenuItem key={t._id} value={t._id}>
                         {t.ticketNo} - {t.subject}
