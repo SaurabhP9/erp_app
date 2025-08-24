@@ -268,8 +268,8 @@ const Client_Ticket = () => {
       var email = localStorage.getItem("email");
 
       // Get employee email
-      sendEmailToAssignedEmployee(editMode, createdOrUpdated);
-      sendEmailToClient(createdOrUpdated, email);
+      // sendEmailToAssignedEmployee(editMode, createdOrUpdated);
+      // sendEmailToClient(createdOrUpdated, email);
 
       setFormData(initialFormData);
       setShowForm(false);

@@ -381,7 +381,14 @@ const Ticket = () => {
 
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
-            value.forEach((file) => form.append("attachments", file));
+            const existing = value.filter((f) => typeof f === "string"); // already saved
+            const newFiles = value.filter((f) => f instanceof File);     // new uploads
+  
+            if (existing.length > 0) {
+              form.append("existingAttachments", JSON.stringify(existing));
+            }
+  
+            newFiles.forEach((file) => form.append("attachments", file));
           } else if (key !== "handoverHistory") {
             form.append(key, value);
           }
@@ -473,7 +480,14 @@ const Ticket = () => {
           const form = new FormData();
           Object.entries(formData).forEach(([key, value]) => {
             if (key === "attachments") {
-              value.forEach((file) => form.append("attachments", file));
+              const existing = value.filter((f) => typeof f === "string");
+              const newFiles = value.filter((f) => f instanceof File);
+  
+              if (existing.length > 0) {
+                form.append("existingAttachments", JSON.stringify(existing));
+              }
+  
+              newFiles.forEach((file) => form.append("attachments", file));
             } else {
               form.append(key, value);
             }

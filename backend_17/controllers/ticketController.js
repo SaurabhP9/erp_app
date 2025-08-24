@@ -73,12 +73,13 @@ exports.createTicket = async (req, res) => {
     //     .json({ error: "Ticket already exists for this project/user." });
 
     const attachments = Array.isArray(req.files)
-      ? req.files.map((file) => ({
-          filename: file.originalname,
-          path: file.path,
-          mimetype: file.mimetype,
-        }))
-      : [];
+  ? req.files.map((file) => ({
+      filename: file.originalname,
+      url: file.path,          
+      public_id: file.filename,
+      mimetype: file.mimetype,
+    }))
+  : [];
 
     const ticketNo = await generateSequenceNumber6Digit();
 
@@ -215,6 +216,31 @@ exports.updateTicketNew = async (req, res) => {
   try {
     const ticketId = req.params.id;
 
+    // 🔹 Handle attachments from Cloudinary
+    let attachments = [];
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      attachments = req.files.map((file) => ({
+        filename: file.originalname,
+        url: file.path,          // Cloudinary secure URL
+        public_id: file.filename, // Cloudinary public_id
+        mimetype: file.mimetype,
+      }));
+    }
+
+    let updateOps = { $set: { ...req.body } };
+
+    // 🔹 Merge old + new attachments if provided
+    if (req.body.existingAttachments) {
+      try {
+        const existing = JSON.parse(req.body.existingAttachments);
+        updateOps.$set.attachments = [...existing, ...attachments];
+      } catch (e) {
+        console.error("Error parsing existingAttachments:", e);
+      }
+    } else if (attachments.length > 0) {
+      updateOps.$push = { attachments: { $each: attachments } };
+    }
+
     // 🧩 Handle FormData-based handoverHistory parsing
     if (req.body['handoverHistory[0].fromEmployeeId']) {
       const parsedHistory = [];
@@ -243,46 +269,35 @@ exports.updateTicketNew = async (req, res) => {
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
 
     const isAlreadyClosed = ticket.mainStatus === "closed";
-    const updateData = { ...req.body };
 
     if (!isAlreadyClosed) {
-      updateData.updatedTime = new Date();
+      updateOps.$set.updatedTime = new Date();
     }
 
+    // 🔹 Handover logic
     const isHandover =
       mainStatus === "handover" &&
       employeeId &&
       employeeId !== ticket.employeeId;
 
-    let updatedTicket;
+    if (isHandover && !req.body.handoverHistory) {
+      delete updateOps.$set.handoverHistory;
 
-    if (
-      isHandover &&
-      !updateData.handoverHistory // Only push if you're not replacing full array
-    ) {
-      delete updateData.handoverHistory;
-
-      updatedTicket = await Ticket.findByIdAndUpdate(
-        ticketId,
-        {
-          $set: updateData,
-          $push: {
-            handoverHistory: {
-              fromEmployeeId: ticket.employeeId,
-              toEmployeeId: employeeId,
-              reassignedBy,
-              reassignedAt: new Date(),
-            },
-          },
+      updateOps.$push = {
+        ...(updateOps.$push || {}),
+        handoverHistory: {
+          fromEmployeeId: ticket.employeeId,
+          toEmployeeId: employeeId,
+          reassignedBy,
+          reassignedAt: new Date(),
         },
-        { new: true, runValidators: true }
-      );
-    } else {
-      updatedTicket = await Ticket.findByIdAndUpdate(ticketId, updateData, {
-        new: true,
-        runValidators: true,
-      });
+      };
     }
+
+    const updatedTicket = await Ticket.findByIdAndUpdate(ticketId, updateOps, {
+      new: true,
+      runValidators: true,
+    });
 
     const formattedTicket = {
       ...updatedTicket.toObject(),

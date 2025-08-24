@@ -401,9 +401,7 @@ const E_Ticket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     const currentUserId = localStorage.getItem("userId");
-
     try {
       let createdOrUpdated;
 
@@ -414,61 +412,57 @@ const E_Ticket = () => {
 
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
-            value.forEach((file) => form.append("attachments", file));
+            const existing = value.filter((file) => typeof file === "string"); // Cloudinary URLs
+            const newFiles = value.filter((file) => file instanceof File);     // New uploads
+          
+            // Send old URLs separately
+            if (existing.length > 0) {
+              form.append("existingAttachments", JSON.stringify(existing));
+            }
+            // Send only new files as FormData
+            newFiles.forEach((file) => form.append("attachments", file));
           } else if (key !== "handoverHistory") {
             form.append(key, value);
           }
         });
-
-        // If handover occurred during edit
+  
+        // If handover happened during edit
         const isHandover =
           formData.mainStatus === "handover" &&
           formData.employeeId !== originalTicket?.employeeId;
-
+  
         if (isHandover) {
           const existingHistory = originalTicket?.handoverHistory || [];
-
+  
           const newEntry = {
             fromEmployeeId: originalTicket.employeeId,
             toEmployeeId: formData.employeeId,
             reassignedBy: currentUserId,
             reassignedAt: new Date().toISOString(),
           };
-
-          // Flatten existing + new entries
+  
+          // Combine + flatten into FormData as indexed fields
           const combinedHistory = [...existingHistory, newEntry];
-
           combinedHistory.forEach((entry, index) => {
-            form.append(
-              `handoverHistory[${index}].fromEmployeeId`,
-              entry.fromEmployeeId
-            );
-            form.append(
-              `handoverHistory[${index}].toEmployeeId`,
-              entry.toEmployeeId
-            );
-            form.append(
-              `handoverHistory[${index}].reassignedBy`,
-              entry.reassignedBy
-            );
-            form.append(
-              `handoverHistory[${index}].reassignedAt`,
-              new Date(entry.reassignedAt).toISOString()
-            );
+            form.append(`handoverHistory[${index}].fromEmployeeId`, entry.fromEmployeeId);
+            form.append(`handoverHistory[${index}].toEmployeeId`, entry.toEmployeeId);
+            form.append(`handoverHistory[${index}].reassignedBy`, entry.reassignedBy);
+            form.append(`handoverHistory[${index}].reassignedAt`, new Date(entry.reassignedAt).toISOString());
           });
         }
-
+  
         createdOrUpdated = await updateTicket(editId, form);
-
+  
         setTickets((prev) =>
           prev.map((t) => (t._id === editId ? createdOrUpdated : t))
         );
-
+  
+        // Add comment if reassigned
         if (originalTicket?.employeeId !== formData.employeeId) {
           const selectedEmployee = employees.find(
             (emp) => emp._id === formData.employeeId
           );
-
+  
           const reassignmentComment = {
             ticketId: editId,
             userId: currentUserId,
