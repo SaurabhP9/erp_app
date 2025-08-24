@@ -64,11 +64,20 @@ export default function MyTimesheet() {
 
         const filterTickets = tickets.filter((t) => {
           if (t.mainStatus !== "closed") return true;
-      
-          const updated = dayjs(t.updatedTime, "DD MMM YYYY, hh:mm a").startOf("day");
-
-          return updated.isSame(today, "day"); // keep only if closed today
-        });        
+        
+          let updated;
+          
+          // If it's ISO (contains 'T'), let dayjs auto-parse
+          if (t.updatedTime && t.updatedTime.includes("T")) {
+            updated = dayjs(t.updatedTime).startOf("day");
+          } else {
+            // Otherwise, parse as formatted string
+            updated = dayjs(t.updatedTime, "DD MMM YYYY, hh:mm a").startOf("day");
+          }
+        
+          return updated.isValid() && updated.isSame(today, "day");
+        });
+        
         console.log("filtertickets", filterTickets)
 
         setTimesheetData(timesheets);
