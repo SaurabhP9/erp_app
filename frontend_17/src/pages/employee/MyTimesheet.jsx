@@ -60,15 +60,16 @@ export default function MyTimesheet() {
         console.log("timesheet is ", timesheetData);
         const tickets = await getTicketsByEmployeeId(userId);
 
-        const today = new Date();
-        const todayStr = today.toISOString().split("T")[0]; // "2025-08-25"
+        const today = dayjs().startOf("day");
 
         const filterTickets = tickets.filter((t) => {
-          if (t.status !== "closed") return true;
+          if (t.mainStatus !== "closed") return true;
+      
+          const updated = dayjs(t.updatedTime, "DD MMM YYYY, hh:mm a").startOf("day");
 
-          const updatedStr = new Date(t.updatedTime).toISOString().split("T")[0];
-          return updatedStr === todayStr; // keep closed if updated today
-        });
+          return updated.isSame(today, "day"); // keep only if closed today
+        });        
+        console.log("filtertickets", filterTickets)
 
         setTimesheetData(timesheets);
         setTickets(filterTickets);
