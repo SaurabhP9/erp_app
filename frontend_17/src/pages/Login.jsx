@@ -479,7 +479,7 @@ const Login = ({ onLogin }) => {
       } else if (role === "employee") {
         navigate("/employee/e_home");
       } else if (role === "client") {
-        navigate("/client/c_home");
+        navigate("/client/e_home");
       }
     }
   }, [navigate]);
@@ -513,7 +513,7 @@ const Login = ({ onLogin }) => {
       } else if (data.user.role === "employee") {
         navigate("/employee/e_home");
       } else if (data.user.role === "client") {
-        navigate("/client/c_home");
+        navigate("/client/e_home");
       } else {
         navigate("/unauthorized");
       }
