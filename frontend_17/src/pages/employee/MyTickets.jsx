@@ -673,7 +673,7 @@ const E_Ticket = () => {
   };
 
   const handleView = (ticket) => {
-    console.log("handover ticket history ", ticket.handoverHistory);
+    console.log("handover ticket history ", ticket);
     setViewTicket(ticket);
   };
 

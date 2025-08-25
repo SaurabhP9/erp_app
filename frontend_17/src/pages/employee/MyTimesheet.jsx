@@ -23,8 +23,9 @@ import dayjs from "dayjs";
 import {
   getTimesheetByEmployeeId,
   addTimesheet,
+  getAllTimesheets,
 } from "../../api/timesheetService";
-import { getTicketsByEmployeeId } from "../../api/ticketApi";
+import { getAllTickets, getTicketsByEmployeeId } from "../../api/ticketApi";
 
 export default function MyTimesheet() {
   const [searchText, setSearchText] = useState("");
@@ -56,9 +57,8 @@ export default function MyTimesheet() {
       if (!userId) return;
 
       try {
-        const timesheets = await getTimesheetByEmployeeId(userId);
-        console.log("timesheet is ", timesheetData);
-        const tickets = await getTicketsByEmployeeId(userId);
+        const timesheets = await getAllTimesheets();
+        const tickets = await getAllTickets();
 
         const today = dayjs().startOf("day");
 
