@@ -88,6 +88,5 @@ const ticketSchema = new mongoose.Schema({
 ticketSchema.index({ userId: 1 });
 ticketSchema.index({ "handoverHistory.reassignedBy": 1 });
 
-ticketSchema.index({ employee: 1, date: -1 }); // Valid
-
+ticketSchema.index({ employee: 1, updatedTime: -1 });
 module.exports = mongoose.model("Ticket", ticketSchema);

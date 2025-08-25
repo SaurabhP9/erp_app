@@ -23,7 +23,7 @@ router.post(
 router.get("/", verifyToken, ticketController.getAllTickets);
 router.get("/:id", verifyToken, ticketController.getTicketById);
 
-router.put("/:id", verifyToken, ticketController.updateTicketNew);
+router.put("/:id", verifyToken, upload.array("attachments", 5), ticketController.updateTicketNew);
 
 router.delete(
   "/:id",
