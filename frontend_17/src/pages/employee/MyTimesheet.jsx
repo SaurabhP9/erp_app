@@ -58,7 +58,8 @@ export default function MyTimesheet() {
       if (!userId) return;
 
       try {
-        const timesheets = await getTicketsByEmployeeId(userId);
+        const timesheets = await getTimesheetByEmployeeId(userId);
+        console.log(timesheets);
         const tickets = await getAllTickets();
 
         const today = dayjs().startOf("day");
@@ -80,8 +81,6 @@ export default function MyTimesheet() {
 
           return updated.isValid() && updated.isSame(today, "day");
         });
-
-        console.log("filtertickets", filterTickets);
 
         setTimesheetData(timesheets);
         setTickets(filterTickets);

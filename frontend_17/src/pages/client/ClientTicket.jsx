@@ -17,6 +17,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  CircularProgress
 } from "@mui/material";
 
 import { sendTicketEmail } from "../../api/emailApi";
@@ -75,16 +76,12 @@ const initialFormData = {
 const Client_Ticket = () => {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  const userIdQuery = query.get("userId");
-  const employeeIdQuery = query.get("employeeId");
-  const statusQuery = query.get("status");
 
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [tickets, setTickets] = useState([]);
   const [viewTicket, setViewTicket] = useState(null);
 
-  const [projects, setProjects] = useState([]); // This state is declared but not used.
   const [departments, setDepartments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [priorities, setPriorities] = useState([]);
@@ -93,9 +90,6 @@ const Client_Ticket = () => {
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  const [assigning, setAssigning] = useState(false); // This state is declared but not used.
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(""); // This state is declared but not used.
-
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
 
@@ -103,6 +97,7 @@ const Client_Ticket = () => {
   const [editedCommentText, setEditedCommentText] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // New: State for submission loading
 
   // Call inside useEffect when ticket is viewed
   useEffect(() => {
@@ -176,7 +171,7 @@ const Client_Ticket = () => {
       }
     };
     fetchAll();
-  }, [formData, editMode]); // Added editMode to dependency array
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -243,6 +238,11 @@ const Client_Ticket = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return; // ✅ Block multiple clicks
+
+    setIsSubmitting(true); // ✅ Lock before API call
+
     const form = new FormData();
 
     Object.entries(formData).forEach(([key, value]) => {
@@ -269,19 +269,14 @@ const Client_Ticket = () => {
         setTickets((prev) => [...prev, createdOrUpdated]);
       }
 
-      //logged in employee
-      // var email = localStorage.getItem("email");
-
-      // Get employee email
-      // sendEmailToAssignedEmployee(editMode, createdOrUpdated);
-      // sendEmailToClient(createdOrUpdated, email);
-
       setFormData(initialFormData);
       setShowForm(false);
       setEditMode(false);
       setEditId(null);
     } catch (err) {
       console.error("Submit failed:", err);
+    } finally {
+      setIsSubmitting(false); // ✅ Always release lock
     }
   };
 
@@ -842,8 +837,19 @@ const Client_Ticket = () => {
 
                   <Grid item>
                     <Box mt={2} display="flex" gap={2}>
-                      <Button type="submit" variant="contained">
-                        Submit
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={isSubmitting}
+                        startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                      >
+                        {isSubmitting
+                          ? editMode
+                            ? "Updating..."
+                            : "Creating..."
+                          : editMode
+                            ? "Update"
+                            : "Submit"}
                       </Button>
                       <Button
                         variant="outlined"
