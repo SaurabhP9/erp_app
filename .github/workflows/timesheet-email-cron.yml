@@ -2,7 +2,7 @@ name: Trigger Timesheet Email Every 10 Minutes
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Every 10 minutes (UTC)
+    - cron: '0 21 * * *'  
 
 jobs:
   call-api:
@@ -10,5 +10,5 @@ jobs:
     steps:
       - name: Curl the Render API endpoint
         run: |
-          curl --location 'https://erp-app-test.onrender.com/api/cron/daily-timesheet-emails' \
+          curl --location 'https://erp-app-test.onrender.com/api/cron/daily-timesheet-emails/v1' \
           --header 'Content-Type: application/json'

@@ -337,49 +337,33 @@ const E_Ticket = () => {
       matchesToDate
     );
   };
-
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-
+  
     if (name === "attachments") {
+      const newFiles = Array.from(files);
+  
       setFormData((prev) => ({
         ...prev,
-        attachments: Array.from(files),
+        attachments: [
+          ...(prev.attachments || []),
+          ...newFiles,
+        ],
       }));
       return;
     }
-
+  
     if (typeof value === "object" && value !== null && value._id) {
       const id = value._id;
-
+  
       const fieldMap = {
-        project: {
-          idKey: "projectId",
-          nameKey: "project",
-          labelKey: "project",
-        },
-        category: {
-          idKey: "categoryId",
-          nameKey: "category",
-          labelKey: "category",
-        },
-        department: {
-          idKey: "departmentId",
-          nameKey: "department",
-          labelKey: "department",
-        },
-        priority: {
-          idKey: "priorityId",
-          nameKey: "priority",
-          labelKey: "priority",
-        },
-        employeeId: {
-          idKey: "employeeId",
-          nameKey: "employee",
-          labelKey: "name",
-        },
+        project: { idKey: "projectId", nameKey: "project", labelKey: "project" },
+        category: { idKey: "categoryId", nameKey: "category", labelKey: "category" },
+        department: { idKey: "departmentId", nameKey: "department", labelKey: "department" },
+        priority: { idKey: "priorityId", nameKey: "priority", labelKey: "priority" },
+        employeeId: { idKey: "employeeId", nameKey: "employee", labelKey: "name" },
       };
-
+  
       if (fieldMap[name]) {
         const { idKey, nameKey, labelKey } = fieldMap[name];
         setFormData((prev) => ({
@@ -388,15 +372,15 @@ const E_Ticket = () => {
           [nameKey]: value[labelKey],
         }));
       }
-
+  
       return;
     }
-
+  
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-  };
+  };  
 
   const handleSubmit = async (e) => {
     e.preventDefault();

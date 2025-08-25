@@ -182,9 +182,14 @@ const Client_Ticket = () => {
     const { name, value, files } = e.target;
 
     if (name === "attachments") {
+      const newFiles = Array.from(files);
+
       setFormData((prev) => ({
         ...prev,
-        attachments: Array.from(files),
+        attachments: [
+          ...(prev.attachments || []),
+          ...newFiles,
+        ],
       }));
       return;
     }
@@ -265,7 +270,7 @@ const Client_Ticket = () => {
       }
 
       //logged in employee
-      var email = localStorage.getItem("email");
+      // var email = localStorage.getItem("email");
 
       // Get employee email
       // sendEmailToAssignedEmployee(editMode, createdOrUpdated);
@@ -338,41 +343,32 @@ const Client_Ticket = () => {
     const htmlContent = `
     <div style="background-color: #fdf8e4; padding: 40px 0;">
       <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-        <p style="font-size: 16px;">Dear ${
-          assignedEmployee?.name || "Team"
-        },</p>
+        <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
+      },</p>
 
         <p style="font-size: 15px;">
-          ${
-            isEdit
-              ? "The following ticket has been updated"
-              : "A new ticket has been assigned to you"
-          }. Please review the details below and take appropriate action.
+          ${isEdit
+        ? "The following ticket has been updated"
+        : "A new ticket has been assigned to you"
+      }. Please review the details below and take appropriate action.
         </p>
 
         <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
         <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-          <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.name
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.subject
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.project
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.category
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.priority
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.issue
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.mainStatus || "Open"
-          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
+      }</td></tr>
         </table>
 
         <div style="margin-top: 30px; text-align: center;">
@@ -393,9 +389,8 @@ const Client_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
-        createdOrUpdated.name
-      }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
+        }`,
       html: htmlContent,
     });
   }
