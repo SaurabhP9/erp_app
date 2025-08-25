@@ -26,6 +26,7 @@ import {
   getAllTimesheets,
 } from "../../api/timesheetService";
 import { getAllTickets, getTicketsByEmployeeId } from "../../api/ticketApi";
+import { Autocomplete } from "@mui/material";
 
 export default function MyTimesheet() {
   const [searchText, setSearchText] = useState("");
@@ -64,21 +65,23 @@ export default function MyTimesheet() {
 
         const filterTickets = tickets.filter((t) => {
           if (t.mainStatus !== "closed") return true;
-        
+
           let updated;
-          
+
           // If it's ISO (contains 'T'), let dayjs auto-parse
           if (t.updatedTime && t.updatedTime.includes("T")) {
             updated = dayjs(t.updatedTime).startOf("day");
           } else {
             // Otherwise, parse as formatted string
-            updated = dayjs(t.updatedTime, "DD MMM YYYY, hh:mm a").startOf("day");
+            updated = dayjs(t.updatedTime, "DD MMM YYYY, hh:mm a").startOf(
+              "day"
+            );
           }
-        
+
           return updated.isValid() && updated.isSame(today, "day");
         });
-        
-        console.log("filtertickets", filterTickets)
+
+        console.log("filtertickets", filterTickets);
 
         setTimesheetData(timesheets);
         setTickets(filterTickets);
@@ -130,8 +133,8 @@ export default function MyTimesheet() {
 
         const issuedDateFormatted = selected.createdTime
           ? dayjs(selected.createdTime, "DD MMM YYYY, hh:mm a").format(
-            "YYYY-MM-DD"
-          )
+              "YYYY-MM-DD"
+            )
           : "";
 
         const targetDateFormatted = selected.targetDate
@@ -284,7 +287,7 @@ export default function MyTimesheet() {
     } catch (err) {
       alert(
         "Error submitting timesheet: " +
-        (err.response?.data?.message || err.message)
+          (err.response?.data?.message || err.message)
       );
       console.error("Error submitting timesheet:", err);
     }
@@ -370,22 +373,23 @@ export default function MyTimesheet() {
                 disabled
                 fullWidth
               />
-              <FormControl fullWidth>
-                <InputLabel>Ticket</InputLabel>
-                <Select
-                  name="ticket"
-                  value={formData.ticket}
-                  onChange={handleFormChange}
-                  required
-                >
-                  {tickets
-                    .map((t) => (
-                      <MenuItem key={t._id} value={t._id}>
-                        {t.ticketNo} - {t.subject}
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                options={tickets}
+                getOptionLabel={(option) =>
+                  `${option.ticketNo} - ${option.subject}`
+                }
+                value={tickets.find((t) => t._id === formData.ticket) || null}
+                onChange={(e, newValue) => {
+                  if (newValue) {
+                    handleFormChange({
+                      target: { name: "ticket", value: newValue._id },
+                    });
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Ticket" required fullWidth />
+                )}
+              />
 
               <TextField
                 label="Subject"
