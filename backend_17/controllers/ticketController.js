@@ -200,9 +200,9 @@ exports.updateTicket = async (req, res) => {
 
     const formattedTicket = {
       ...updatedTicket.toObject(),
-      createdTime: formatDate(updatedTicket.createdTime),
-      updatedTime: formatDate(updatedTicket.updatedTime),
-    };
+      createdTime: updatedTicket.createdTime.toISOString(), // stays same
+      updatedTime: updatedTicket.updatedTime?.toISOString() // only changes on update
+    };    
 
     res.json(formattedTicket);
   } catch (err) {
