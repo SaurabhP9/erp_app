@@ -339,10 +339,10 @@ const E_Ticket = () => {
   };
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-  
+
     if (name === "attachments") {
       const newFiles = Array.from(files);
-  
+
       setFormData((prev) => ({
         ...prev,
         attachments: [
@@ -352,10 +352,10 @@ const E_Ticket = () => {
       }));
       return;
     }
-  
+
     if (typeof value === "object" && value !== null && value._id) {
       const id = value._id;
-  
+
       const fieldMap = {
         project: { idKey: "projectId", nameKey: "project", labelKey: "project" },
         category: { idKey: "categoryId", nameKey: "category", labelKey: "category" },
@@ -363,7 +363,7 @@ const E_Ticket = () => {
         priority: { idKey: "priorityId", nameKey: "priority", labelKey: "priority" },
         employeeId: { idKey: "employeeId", nameKey: "employee", labelKey: "name" },
       };
-  
+
       if (fieldMap[name]) {
         const { idKey, nameKey, labelKey } = fieldMap[name];
         setFormData((prev) => ({
@@ -372,15 +372,15 @@ const E_Ticket = () => {
           [nameKey]: value[labelKey],
         }));
       }
-  
+
       return;
     }
-  
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-  };  
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -398,7 +398,7 @@ const E_Ticket = () => {
           if (key === "attachments") {
             const existing = value.filter((file) => typeof file === "string"); // Cloudinary URLs
             const newFiles = value.filter((file) => file instanceof File);     // New uploads
-          
+
             // Send old URLs separately
             if (existing.length > 0) {
               form.append("existingAttachments", JSON.stringify(existing));
@@ -409,22 +409,22 @@ const E_Ticket = () => {
             form.append(key, value);
           }
         });
-  
+
         // If handover happened during edit
         const isHandover =
           formData.mainStatus === "handover" &&
           formData.employeeId !== originalTicket?.employeeId;
-  
+
         if (isHandover) {
           const existingHistory = originalTicket?.handoverHistory || [];
-  
+
           const newEntry = {
             fromEmployeeId: originalTicket.employeeId,
             toEmployeeId: formData.employeeId,
             reassignedBy: currentUserId,
             reassignedAt: new Date().toISOString(),
           };
-  
+
           // Combine + flatten into FormData as indexed fields
           const combinedHistory = [...existingHistory, newEntry];
           combinedHistory.forEach((entry, index) => {
@@ -434,19 +434,19 @@ const E_Ticket = () => {
             form.append(`handoverHistory[${index}].reassignedAt`, new Date(entry.reassignedAt).toISOString());
           });
         }
-  
+
         createdOrUpdated = await updateTicket(editId, form);
-  
+
         setTickets((prev) =>
           prev.map((t) => (t._id === editId ? createdOrUpdated : t))
         );
-  
+
         // Add comment if reassigned
         if (originalTicket?.employeeId !== formData.employeeId) {
           const selectedEmployee = employees.find(
             (emp) => emp._id === formData.employeeId
           );
-  
+
           const reassignmentComment = {
             ticketId: editId,
             userId: currentUserId,
@@ -1457,7 +1457,7 @@ const E_Ticket = () => {
                   viewTicket.attachments.map((file, i) => (
                     <Box key={i} sx={{ mb: 0.5 }}>
                       <a
-                        href={file.path} // ✨ CHANGE THIS LINE: Directly use file.path as it's the full Cloudinary URL
+                        href={file.url}   // Cloudinary URL
                         target="_blank"
                         rel="noreferrer"
                         style={{ textDecoration: "none", color: "#1976d2" }}

@@ -73,13 +73,13 @@ exports.createTicket = async (req, res) => {
     //     .json({ error: "Ticket already exists for this project/user." });
 
     const attachments = Array.isArray(req.files)
-  ? req.files.map((file) => ({
-      filename: file.originalname,
-      url: file.path,          
-      public_id: file.filename,
-      mimetype: file.mimetype,
-    }))
-  : [];
+      ? req.files.map((file) => ({
+        filename: file.originalname,
+        url: file.path,           // Cloudinary URL
+        public_id: file.filename, // needed for delete
+        mimetype: file.mimetype,
+      }))
+      : [];
 
     const ticketNo = await generateSequenceNumber6Digit();
 
@@ -93,8 +93,8 @@ exports.createTicket = async (req, res) => {
       ...req.body,
       attachments,
       ticketNo,
-      updatedTime: new Date().toISOString(),
-      createdTime: new Date().toISOString(),
+      updatedTime: new Date(),
+      createdTime: new Date(),
       ...(isHandover && {
         handoverHistory: [
           {
@@ -149,68 +149,6 @@ exports.getTicketById = async (req, res) => {
   }
 };
 
-// Update Ticket by ID
-exports.updateTicket = async (req, res) => {
-  try {
-    const ticketId = req.params.id;
-    const { mainStatus, employeeId, reassignedBy } = req.body;
-
-    const ticket = await Ticket.findById(ticketId);
-    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
-
-    const isAlreadyClosed = ticket.mainStatus === "closed";
-    const updateData = { ...req.body };
-
-    // Only update updatedTime if the ticket is NOT already closed
-    if (!isAlreadyClosed) {
-      updateData.updatedTime = new Date();
-    }
-
-    // Detect reassignment with status = handover
-    const isHandover =
-      mainStatus === "handover" &&
-      employeeId &&
-      employeeId !== ticket.employeeId;
-
-    // If it's a handover, push to handoverHistory
-    if (isHandover) {
-      await Ticket.findByIdAndUpdate(
-        ticketId,
-        {
-          $set: updateData,
-          $push: {
-            handoverHistory: {
-              fromEmployeeId: ticket.employeeId,
-              toEmployeeId: employeeId,
-              reassignedBy: reassignedBy, // ✅ not userId
-              reassignedAt: new Date(),
-            },
-          },
-        },
-        { new: true, runValidators: true }
-      );
-    } else {
-      await Ticket.findByIdAndUpdate(ticketId, updateData, {
-        new: true,
-        runValidators: true,
-      });
-    }
-
-    const updatedTicket = await Ticket.findById(ticketId);
-
-    const formattedTicket = {
-      ...updatedTicket.toObject(),
-      createdTime: updatedTicket.createdTime.toISOString(), // stays same
-      updatedTime: updatedTicket.updatedTime?.toISOString() // only changes on update
-    };    
-
-    res.json(formattedTicket);
-  } catch (err) {
-    console.error("Ticket update error:", err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
 //new  updating method for tickets
 exports.updateTicketNew = async (req, res) => {
   try {
@@ -221,8 +159,8 @@ exports.updateTicketNew = async (req, res) => {
     if (Array.isArray(req.files) && req.files.length > 0) {
       attachments = req.files.map((file) => ({
         filename: file.originalname,
-        url: file.path,          // Cloudinary secure URL
-        public_id: file.filename, // Cloudinary public_id
+        url: file.path,           // Cloudinary URL
+        public_id: file.filename, 
         mimetype: file.mimetype,
       }));
     }
