@@ -9,18 +9,18 @@ cloudinary.config({
 });
 
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+  cloudinary,
   params: {
     folder: "ticket_attachments",
-    resource_type: "auto", // auto-detect type (image, raw, video, etc.)
+    resource_type: "auto",
     public_id: (req, file) =>
       `ticket-${Date.now()}-${file.originalname.replace(/\s/g, "_")}`,
   },
 });
 
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       "image/jpeg",
@@ -33,17 +33,8 @@ const upload = multer({
       "text/csv",
       "text/plain",
     ];
-
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(
-        new Error(
-          "Invalid file type. Only PDF, JPG, PNG, Word, Excel, CSV allowed."
-        ),
-        false
-      );
-    }
+    if (allowedTypes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Invalid file type."), false);
   },
 });
 

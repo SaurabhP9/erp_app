@@ -69,9 +69,10 @@ const ticketSchema = new mongoose.Schema({
   ],
   attachments: [
     {
-      filename: String,
-      path: String,
-      mimetype: String,
+      filename: { type: String },   // original file name
+      url: { type: String },        // Cloudinary URL
+      public_id: { type: String },  // Cloudinary public_id
+      mimetype: { type: String },
     },
   ],
   mainStatus: {

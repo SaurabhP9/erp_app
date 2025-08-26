@@ -154,32 +154,33 @@ exports.updateTicketNew = async (req, res) => {
   try {
     const ticketId = req.params.id;
 
-    // 🔹 Handle attachments from Cloudinary
-    let attachments = [];
+    // 🔹 Handle new attachments from Cloudinary (multer-storage-cloudinary already uploaded)
+    let newAttachments = [];
     if (Array.isArray(req.files) && req.files.length > 0) {
-      attachments = req.files.map((file) => ({
+      newAttachments = req.files.map((file) => ({
         filename: file.originalname,
-        url: file.path,           // Cloudinary URL
-        public_id: file.filename, 
+        url: file.path,          // Cloudinary public URL
+        public_id: file.filename, // Cloudinary public_id (for delete later)
         mimetype: file.mimetype,
       }));
     }
 
     let updateOps = { $set: { ...req.body } };
 
-    // 🔹 Merge old + new attachments if provided
+    // Merge existing + new attachments
     if (req.body.existingAttachments) {
       try {
-        const existing = JSON.parse(req.body.existingAttachments);
-        updateOps.$set.attachments = [...existing, ...attachments];
+        const existing = JSON.parse(req.body.existingAttachments); // expect array of objects
+        updateOps.$set.attachments = [...existing, ...newAttachments];
       } catch (e) {
         console.error("Error parsing existingAttachments:", e);
       }
-    } else if (attachments.length > 0) {
-      updateOps.$push = { attachments: { $each: attachments } };
+    } else if (newAttachments.length > 0) {
+      // if no existingAttachments were passed, just push new ones
+      updateOps.$push = { attachments: { $each: newAttachments } };
     }
 
-    // 🧩 Handle FormData-based handoverHistory parsing
+    // Handle FormData-based handoverHistory parsing (unchanged)
     if (req.body['handoverHistory[0].fromEmployeeId']) {
       const parsedHistory = [];
       let i = 0;
@@ -212,7 +213,6 @@ exports.updateTicketNew = async (req, res) => {
       updateOps.$set.updatedTime = new Date();
     }
 
-    // 🔹 Handover logic
     const isHandover =
       mainStatus === "handover" &&
       employeeId &&
