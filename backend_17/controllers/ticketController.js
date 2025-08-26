@@ -1,5 +1,6 @@
 // controllers/ticketController.js
 const { Timesheet, Ticket, Counter } = require("../models");
+const cloudinary = require("cloudinary").v2;
 
 const formatDate = (isoString) => {
   const date = new Date(isoString);

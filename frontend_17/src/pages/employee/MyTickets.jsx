@@ -28,8 +28,8 @@ import {
   CircularProgress, // Added: CircularProgress for loading indicator
   Snackbar, // Added: Snackbar for success message
   Alert, // Added: Alert for success message
-  Dialog,DialogTitle,DialogContent,DialogContentText,DialogActions
 } from "@mui/material";
+
 import { useMemo } from "react";
 import { FaFilter } from "react-icons/fa";
 import * as XLSX from "xlsx";
@@ -38,6 +38,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import EditIcon from "@mui/icons-material/Edit"; // Added: EditIcon
 import { sendTicketEmail } from "../../api/emailApi";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 import {
   createTicket,
@@ -678,7 +679,6 @@ const E_Ticket = () => {
   };
 
   const handleView = (ticket) => {
-    console.log("handover ticket history ", ticket);
     setViewTicket(ticket);
   };
 
@@ -1464,6 +1464,7 @@ const E_Ticket = () => {
                       key={i}
                       sx={{ display: "flex", alignItems: "center", mb: 0.5 }}
                     >
+                      {/* File link */}
                       <a
                         href={file.url}
                         target="_blank"
@@ -1473,73 +1474,41 @@ const E_Ticket = () => {
                         📄 {file.filename}
                       </a>
 
-                      {/* Delete button opens dialog */}
-                      <Button
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        onClick={() => {
-                          setSelectedFile(file); // Save file to be deleted
-                          setOpenDialog(true);   // Open dialog
-                        }}
-                      >
-                        Delete
-                      </Button>
+                      {/* Delete Icon */}
+                      <Tooltip title="Delete Attachment">
+                        <IconButton
+                          color="error"
+                          size="small"
+                          onClick={async () => {
+                            try {
+                              const updatedTicket = await deleteAttachment(viewTicket._id, file.public_id);
+
+                              setViewTicket(updatedTicket);
+                              setTickets((prev) =>
+                                prev.map((t) =>
+                                  t._id === viewTicket._id ? updatedTicket : t
+                                )
+                              );
+
+                              setSnackbarMessage("Attachment deleted successfully!");
+                              setSnackbarSeverity("success");
+                              setSnackbarOpen(true);
+                            } catch (err) {
+                              console.error("Attachment delete failed:", err);
+                              setSnackbarMessage("Failed to delete attachment.");
+                              setSnackbarSeverity("error");
+                              setSnackbarOpen(true);
+                            }
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   ))
                 ) : (
                   <Typography color="gray">No attachments</Typography>
                 )}
-                <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-                  <DialogTitle>Delete Attachment</DialogTitle>
-                  <DialogContent>
-                    <DialogContentText>
-                      Are you sure you want to delete{" "}
-                      <strong>{selectedFile?.filename}</strong>?
-                      This action cannot be undone.
-                    </DialogContentText>
-                  </DialogContent>
-                  <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)} color="primary">
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={async () => {
-                        try {
-                          if (!selectedFile) return;
-
-                          const updatedTicket = await deleteAttachment(
-                            viewTicket._id,
-                            selectedFile.public_id
-                          );
-
-                          // Update state
-                          setViewTicket(updatedTicket);
-                          setTickets((prev) =>
-                            prev.map((t) => (t._id === viewTicket._id ? updatedTicket : t))
-                          );
-
-                          setSnackbarMessage("Attachment deleted successfully!");
-                          setSnackbarSeverity("success");
-                          setSnackbarOpen(true);
-                        } catch (err) {
-                          console.error("Attachment delete failed:", err);
-                          setSnackbarMessage("Failed to delete attachment.");
-                          setSnackbarSeverity("error");
-                          setSnackbarOpen(true);
-                        } finally {
-                          setOpenDialog(false);
-                          setSelectedFile(null);
-                        }
-                      }}
-                      color="error"
-                      variant="contained"
-                    >
-                      Yes, Delete
-                    </Button>
-                  </DialogActions>
-                </Dialog>
-
               </Box>
 
               <Box mt={5}>

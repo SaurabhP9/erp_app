@@ -57,7 +57,6 @@ export default function E_home() {
           if (status && status !== "handover" && stats[status] !== undefined) {
             stats[status]++;
           }
-          console.log(status);
     
           if (
             Array.isArray(t.handoverHistory) &&

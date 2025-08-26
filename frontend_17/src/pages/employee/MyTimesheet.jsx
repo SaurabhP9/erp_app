@@ -59,7 +59,6 @@ export default function MyTimesheet() {
 
       try {
         const timesheets = await getTimesheetByEmployeeId(userId);
-        console.log(timesheets);
         const tickets = await getAllTickets();
 
         const today = dayjs().startOf("day");
