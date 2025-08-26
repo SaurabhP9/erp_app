@@ -58,3 +58,10 @@ export const getHandoverTicketsByUser = async (userId) => {
   const res = await api.get(`/api/ticket/handover/by/${userId}`);
   return res.data;
 };
+
+export const deleteAttachment = async (ticketId, publicId) => {
+  const res = await api.delete(
+    `/api/ticket/${ticketId}/attachment/${encodeURIComponent(publicId)}`
+  );
+  return res.data;
+};

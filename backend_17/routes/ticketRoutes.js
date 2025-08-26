@@ -46,4 +46,7 @@ router.post("/report", ticketController.getReportTickets);
 router.get("/handover/by/:userId", ticketController.getTicketsHandedOverByUser);
 router.get("/handover/count/:userId", ticketController.getHandoverTicketCountByUser);
 
+// attachemnt routes.
+router.delete("/:ticketId/attachment/:publicId", verifyToken, ticketController.deleteAttachment);
+
 module.exports = router;

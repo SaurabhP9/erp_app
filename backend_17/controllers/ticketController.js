@@ -502,3 +502,30 @@ exports.getHandoverTicketCountByUser = async (req, res) => {
     res.status(500).json({ error: "Error counting handover tickets" });
   }
 };
+
+exports.deleteAttachment = async (req, res) => {
+  try {
+    const { ticketId, publicId } = req.params;
+    const decodedPublicId = decodeURIComponent(publicId);
+
+    console.log("Deleting.", ticketId, "Public Id is", decodedPublicId);
+
+    const ticket = await Ticket.findById(ticketId);
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    // Remove file from Cloudinary
+    await cloudinary.uploader.destroy(decodedPublicId);
+
+    // Remove from DB
+    const updated = await Ticket.findByIdAndUpdate(
+      ticketId,
+      { $pull: { attachments: { public_id: decodedPublicId } } },
+      { new: true }
+    );
+
+    res.json(updated);
+  } catch (err) {
+    console.error("Delete attachment error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
