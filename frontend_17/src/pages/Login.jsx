@@ -505,6 +505,8 @@ const Login = ({ onLogin }) => {
       localStorage.setItem("userId", data.user.id);
       localStorage.setItem("username", data.user.name);
       localStorage.setItem("email", data.user.email);
+      localStorage.setItem("department", data.user.department);
+      console.log(data.user);
 
       onLogin(data.user.role);
 

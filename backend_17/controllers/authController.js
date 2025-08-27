@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/user");
+const department = require("../models/department");
 
 // Login
 exports.login = async (req, res) => {
@@ -33,6 +34,7 @@ exports.login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        department: user.department
       },
     });
   } catch (err) {

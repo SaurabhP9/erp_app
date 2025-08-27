@@ -56,7 +56,7 @@ const initialFormData = {
   name: "",
   subject: "",
   projectId: "",
-  project: username,
+  project: "",
   departmentId: "",
   department: "",
   categoryId: "",
@@ -86,7 +86,7 @@ const Client_Ticket = () => {
   const [categories, setCategories] = useState([]);
   const [priorities, setPriorities] = useState([]);
   const [employees, setEmployees] = useState([]);
-
+  const [projects, setProjects] = useState([]);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
 
@@ -109,12 +109,13 @@ const Client_Ticket = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [ticketData, dept, cat, prio, emp] = await Promise.all([
+        const [ticketData, dept, cat, prio, emp, proj] = await Promise.all([
           getAllTickets(),
           getAllDepartments(),
           getAllCategories(),
           getAllPriorities(),
           getAllUsersByRole("employee"),
+          getAllProjects()
         ]);
 
         const userId = localStorage.getItem("userId");
@@ -146,13 +147,18 @@ const Client_Ticket = () => {
         // Filter functional (non-technical) employees only
         const isFunctional = (e) => {
           const dept = e.department?.toLowerCase() || "";
-          const role = e.role?.toLowerCase() || "";
-          return !dept.includes("technical") && !role.includes("technical");
+          return dept.includes("functional");
         };
-
-        const filteredFunctional = emp.filter(
-          (e) => username?.includes(e.projects) && isFunctional(e)
-        );
+        
+        const filteredFunctional = emp.filter((e) => {
+          const hasProject = e.projects?.some(
+            (proj) => proj.toLowerCase().trim() === username.toLowerCase().trim()
+          );
+          const functional = isFunctional(e);
+          return hasProject && functional;
+        });
+               
+        console.log("filter emp ", filteredFunctional);
         filteredFunctional.length > 0
           ? setEmployees(filteredFunctional)
           : setEmployees(emp);
@@ -166,6 +172,11 @@ const Client_Ticket = () => {
             employee: oneEmp.name,
           }));
         }
+        // filter project
+        const finalProjects = proj.filter(
+          (project)=> username.includes(project.project)
+        ) 
+        setProjects(finalProjects);
       } catch (err) {
         console.error("Error loading data:", err);
       }
@@ -239,7 +250,7 @@ const Client_Ticket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (isSubmitting) return; // ✅ Block multiple clicks
+    if (isSubmitting) return; 
 
     setIsSubmitting(true); // ✅ Lock before API call
 
@@ -276,7 +287,7 @@ const Client_Ticket = () => {
     } catch (err) {
       console.error("Submit failed:", err);
     } finally {
-      setIsSubmitting(false); // ✅ Always release lock
+      setIsSubmitting(false); // Always release lock
     }
   };
 
@@ -509,7 +520,7 @@ const Client_Ticket = () => {
             <Button
               variant="contained"
               onClick={() => {
-                setFormData({ ...initialFormData, project: username });
+                setFormData({ ...initialFormData, project: projects[0].project});
                 setEditMode(false);
                 setEditId(null);
                 setViewTicket(null);
@@ -701,7 +712,7 @@ const Client_Ticket = () => {
                       fullWidth
                       label="Project"
                       name="project"
-                      value={username}
+                      value={projects[0].project}
                       disabled
                     />
                   </Grid>
@@ -728,23 +739,16 @@ const Client_Ticket = () => {
 
                   <Grid item>
                     <TextField
-                      select
                       fullWidth
-                      required
                       label="Department"
-                      name="departmentId"
-                      value={formData.departmentId}
-                      onChange={handleChange}
-                      disabled={editMode}
-                    >
-                      <MenuItem value="">Select</MenuItem>
-                      {departments.map((dept) => (
-                        <MenuItem key={dept._id} value={dept._id}>
-                          {dept.department}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      name="department"
+                      value={
+                        departments[0].department
+                      }
+                      disabled={true}   
+                    />
                   </Grid>
+
 
                   <Grid item>
                     <TextField

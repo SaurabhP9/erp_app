@@ -106,7 +106,7 @@ const E_Ticket = () => {
   const [viewTicket, setViewTicket] = useState(null);
 
   const [projects, setProjects] = useState([]);
-  const [departments, setDepartments] = useState([]); // Added: departments state
+  const [departments, setDepartments] = useState([]);
   const [status, setStatus] = useState([]);
   const [categories, setCategories] = useState([]);
   const [priorities, setPriorities] = useState([]);
@@ -134,6 +134,7 @@ const E_Ticket = () => {
   const [originalMainStatus, setOriginalMainStatus] = useState("");
 
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [functional, setFunctional] = useState(false);
   const [filterValues, setFilterValues] = useState({
     project: "",
     category: "",
@@ -149,8 +150,8 @@ const E_Ticket = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false); // New: State for Snackbar visibility
   const [snackbarMessage, setSnackbarMessage] = useState(""); // New: State for Snackbar message
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // New: State for Snackbar severity
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [clients, setClients] = useState([]);
+  const [isHandover, setIsHandover] = useState(null);
 
 
   const cellStyle = {
@@ -249,7 +250,8 @@ const E_Ticket = () => {
   const fetchAll = async () => {
     try {
       const userId = localStorage.getItem("userId");
-      const [ticketData, proj, dept, cat, prio, users, emp, statusList] =
+      const departmentUser = localStorage.getItem("department");
+      const [ticketData, proj, dept, cat, prio, users, emp, statusList, clients] =
         await Promise.all([
           getAllTickets(),
           getAllProjects(),
@@ -259,6 +261,7 @@ const E_Ticket = () => {
           getAllUsers(),
           getAllUsersByRole("employee"),
           getAllStatuses(),
+          getAllUsersByRole("client"),
         ]);
 
       const assigned = ticketData.filter((t) => t.employeeId === userId);
@@ -281,7 +284,9 @@ const E_Ticket = () => {
       // setEmployees(filterEmp);
       setEmployees(emp);
       setUsers(users);
+      setClients(clients);
       setStatus(statusList);
+      setFunctional(departmentUser.toLocaleLowerCase() == "functional")
     } catch (err) {
       console.error("Error loading data:", err);
     }
@@ -1287,20 +1292,31 @@ const E_Ticket = () => {
                 <TextField
                   select
                   fullWidth
-                  label="Assign To Employee"
-                  name="employeeId"
-                  value={employees.find((e) => e._id === formData.employeeId)?._id || ""}
+                  required
+                  label={formData.mainStatus === "handover" ? "Assign To Client" : "Assign To Employee"}
+                  name={formData.mainStatus === "handover" ? "clientId" : "employeeId"}
+                  value={
+                    formData.mainStatus === "handover"
+                      ? clients.find((c) => c._id === formData.clientId)?._id || ""
+                      : employees.find((e) => e._id === formData.employeeId)?._id || ""
+                  }
                   disabled={lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)}
                   onChange={handleChange}
                 >
                   <MenuItem value="">Select</MenuItem>
-                  {employees.map((emp) => (
-                    <MenuItem key={emp._id} value={emp._id}>
-                      {emp.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
 
+                  {formData.mainStatus === "handover"
+                    ? clients.map((client) => (
+                      <MenuItem key={client._id} value={client._id}>
+                        {client.name}
+                      </MenuItem>
+                    ))
+                    : employees.map((emp) => (
+                      <MenuItem key={emp._id} value={emp._id}>
+                        {emp.name}
+                      </MenuItem>
+                    ))}
+                </TextField>
               </Grid>
               <Grid item>
                 <TextField
