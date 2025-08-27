@@ -1278,14 +1278,21 @@ const E_Ticket = () => {
                   name="mainStatus"
                   value={formData.mainStatus}
                   onChange={handleChange}
-                  disabled={lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)}
+                  disabled={
+                    lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)
+                  }
                 >
-                  <MenuItem value="">Select</MenuItem>
-                  <MenuItem value="open">Open</MenuItem>
-                  <MenuItem value="inProcess">In Process</MenuItem>
-                  <MenuItem value="closed">Closed</MenuItem>
-                  <MenuItem value="handover">Handover</MenuItem>
-                  <MenuItem value="working">Working</MenuItem>
+                   <MenuItem value="">Select</MenuItem>
+                  {status.map((st) => {
+                    if (st.mainStatus === "handover" && !functional) {
+                      return null;
+                    }
+                    return (
+                      <MenuItem key={st._id} value={st.mainStatus}>
+                        {st.mainStatus}
+                      </MenuItem>
+                    );
+                  })}
                 </TextField>
               </Grid>
               <Grid item>
