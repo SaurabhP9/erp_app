@@ -152,13 +152,12 @@ const Client_Ticket = () => {
         
         const filteredFunctional = emp.filter((e) => {
           const hasProject = e.projects?.some(
-            (proj) => proj.toLowerCase().trim() === username.toLowerCase().trim()
+            (proj) => (proj?.toLowerCase()?.trim() || "") === (username?.toLowerCase()?.trim() || "")
           );
           const functional = isFunctional(e);
           return hasProject && functional;
         });
                
-        console.log("filter emp ", filteredFunctional);
         filteredFunctional.length > 0
           ? setEmployees(filteredFunctional)
           : setEmployees(emp);
@@ -491,13 +490,20 @@ const Client_Ticket = () => {
       console.error("Error updating comment:", err);
     }
   };
-  const filteredTickets = tickets.filter(
-    (ticket) =>
-      ticket.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.issue.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTickets = tickets.filter((ticket) => {
+    const name = ticket.name?.toLowerCase() || "";
+    const subject = ticket.subject?.toLowerCase() || "";
+    const project = ticket.project?.toLowerCase() || "";
+    const issue = ticket.issue?.toLowerCase() || "";
+    const search = searchTerm?.toLowerCase() || "";
+  
+    return (
+      name.includes(search) ||
+      subject.includes(search) ||
+      project.includes(search) ||
+      issue.includes(search)
+    );
+  });
 
   const sortedTickets = [...filteredTickets].sort(
     (a, b) => dayjs(b.createdTime).valueOf() - dayjs(a.createdTime).valueOf()
@@ -520,7 +526,11 @@ const Client_Ticket = () => {
             <Button
               variant="contained"
               onClick={() => {
-                setFormData({ ...initialFormData, project: projects[0].project});
+                setFormData({
+                  ...initialFormData,
+                  project: projects.length > 0 ? projects[0].project : ""
+                });
+                
                 setEditMode(false);
                 setEditId(null);
                 setViewTicket(null);
@@ -683,7 +693,7 @@ const Client_Ticket = () => {
 
               <form onSubmit={handleSubmit}>
                 <Grid container spacing={2} direction="column">
-                  <Grid item>
+                  <Grid>
                     <TextField
                       fullWidth
                       required
@@ -695,7 +705,7 @@ const Client_Ticket = () => {
                     />
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <TextField
                       fullWidth
                       required
@@ -707,17 +717,17 @@ const Client_Ticket = () => {
                     />
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <TextField
                       fullWidth
                       label="Project"
                       name="project"
-                      value={projects[0].project}
+                      value={projects.length > 0 ? projects[0].project : ""}
                       disabled
                     />
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <TextField
                       select
                       fullWidth
@@ -737,7 +747,7 @@ const Client_Ticket = () => {
                     </TextField>
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <TextField
                       fullWidth
                       label="Department"
@@ -750,7 +760,7 @@ const Client_Ticket = () => {
                   </Grid>
 
 
-                  <Grid item>
+                  <Grid>
                     <TextField
                       select
                       fullWidth
@@ -770,7 +780,7 @@ const Client_Ticket = () => {
                     </TextField>
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <TextField
                       select
                       fullWidth
@@ -786,7 +796,7 @@ const Client_Ticket = () => {
                     </TextField>
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <TextField
                       select
                       fullWidth
@@ -806,7 +816,7 @@ const Client_Ticket = () => {
                     </TextField>
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <TextField
                       fullWidth
                       required
@@ -820,7 +830,7 @@ const Client_Ticket = () => {
                     />
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <Typography variant="body2" sx={{ mb: 1 }}>
                       Attachments
                     </Typography>
@@ -839,7 +849,7 @@ const Client_Ticket = () => {
                     )}
                   </Grid>
 
-                  <Grid item>
+                  <Grid>
                     <Box mt={2} display="flex" gap={2}>
                       <Button
                         type="submit"
