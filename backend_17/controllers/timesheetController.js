@@ -476,7 +476,11 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
               <td>${t.ticketNo || "-"}</td>
               <td>${t.subject || "-"}</td>
               <td>${t.issuedDate || "-"}</td>
-              <td>${t.targetDate || "-"}</td>
+              <td>${
+                dayjs(t.targetDate).isValid()
+                  ? dayjs(t.targetDate).format("DD-MM-YYYY")
+                  : "-"
+              }</td>
               <td>${t.task || "-"}</td>
               <td>${dayjs(t.createdAt).format("DD-MM-YYYY HH:mm")}</td>
               <td>${dayjs(t.updatedAt).format("DD-MM-YYYY HH:mm")}</td>
