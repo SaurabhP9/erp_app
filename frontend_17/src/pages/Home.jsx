@@ -49,7 +49,7 @@ export default function Home() {
         setSummary(data);
         if (roleFilter !== "all") {
           const roleSummary = await getTicketSummaryByRole(roleFilter);
-          setRoleBasedSummary(roleSummary || []);
+          setRoleBasedSummary(roleSummary);
         } else {
           setRoleBasedSummary([]);
         }
@@ -66,52 +66,52 @@ export default function Home() {
 
   const { ticketSummary, employeeSummary, userSummary } = summary;
 
-  const renderUserSummary = (users) => (
-    <Grid item xs={12} sm={10} md={3}>
-      {users
-        .filter((user) => roleFilter === "all" || user.role === roleFilter)
-        .map((user, index) => (
-          <Paper key={index} elevation={2} sx={{ p: 1, mb: 2 }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={headerStyle} colSpan={4}>
-                    {user.name} [{user.email}]
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={headerStyle}>Open</TableCell>
-                  <TableCell sx={headerStyle}>InProcess</TableCell>
-                  <TableCell sx={headerStyle}>Closed</TableCell>
-                  <TableCell sx={headerStyle}>Handover</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  {["open", "inProcess", "closed", "handover"].map((key) => (
-                    <TableCell
-                      key={key}
-                      sx={{ ...cellStyle, ...orangeText }}
-                      onClick={() =>
-                        navigate(`/ticket?userId=${user.userId}&status=${key}`)
-                      }
-                    >
-                      {user.ticketStatus[key] || 0}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Paper>
-        ))}
-    </Grid>
-  );
+  // const renderUserSummary = (users) => (
+  //   <Grid item xs={12} sm={10} md={3}>
+  //     {users
+  //       .filter((user) => roleFilter === "all" || user.role === roleFilter)
+  //       .map((user, index) => (
+  //         <Paper key={index} elevation={2} sx={{ p: 1, mb: 2 }}>
+  //           <Table size="small">
+  //             <TableHead>
+  //               <TableRow>
+  //                 <TableCell sx={headerStyle} colSpan={4}>
+  //                   {user.name} [{user.email}]
+  //                 </TableCell>
+  //               </TableRow>
+  //               <TableRow>
+  //                 <TableCell sx={headerStyle}>Open</TableCell>
+  //                 <TableCell sx={headerStyle}>InProcess</TableCell>
+  //                 <TableCell sx={headerStyle}>Closed</TableCell>
+  //                 <TableCell sx={headerStyle}>Handover</TableCell>
+  //               </TableRow>
+  //             </TableHead>
+  //             <TableBody>
+  //               <TableRow>
+  //                 {["open", "inProcess", "closed", "handover"].map((key) => (
+  //                   <TableCell
+  //                     key={key}
+  //                     sx={{ ...cellStyle, ...orangeText }}
+  //                     onClick={() =>
+  //                       navigate(`/ticket?userId=${user.userId}&status=${key}`)
+  //                     }
+  //                   >
+  //                     {user.ticketStatus[key] || 0}
+  //                   </TableCell>
+  //                 ))}
+  //               </TableRow>
+  //             </TableBody>
+  //           </Table>
+  //         </Paper>
+  //       ))}
+  //   </Grid>
+  // );
 
   return (
     <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
-      <Grid container spacing={3} justifyContent="center">
+      <Grid container spacing={3} wrap="nowrap" sx={{ overflowX: "auto" }}>
         {/* Ticket Summary */}
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={4} md={4} sx={{ minWidth: "300px" }}>
           <Paper
             elevation={2}
             sx={{ p: 1, maxHeight: "75vh", overflowY: "auto" }}
@@ -151,7 +151,7 @@ export default function Home() {
         </Grid>
 
         {/* Employee Summary */}
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={4} md={4} sx={{ minWidth: "300px" }}>
           <Box sx={{ maxHeight: "65vh", overflowY: "auto" }}>
             {employeeSummary.map((emp, index) => (
               <Paper key={index} elevation={2} sx={{ p: 1, mb: 2 }}>
@@ -195,7 +195,7 @@ export default function Home() {
         </Grid>
 
         {/* Conditional User Summary */}
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={4} md={4} sx={{ minWidth: "300px" }}>
           <Box sx={{ maxHeight: "65vh", overflowY: "auto" }}>
             {(roleBaseSummary.length > 0 ? roleBaseSummary : userSummary).map(
               (user, index) => (

@@ -1,4 +1,4 @@
-echo "name: Deploy to Vercel (Staging)
+name: Deploy to Vercel (Staging)
 
 on:
   push:
@@ -11,4 +11,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Vercel Deploy Hook
-        run: curl -X POST \"https://api.vercel.com/v1/integrations/deploy/prj_oQDVEuA0buSkzLJQNYB20HmdjfK9/9R2PJJ9CJg\"" > .github/workflows/vercel-deploy.yml
+        run: curl -X POST "https://api.vercel.com/v1/integrations/deploy/prj_oQDVEuA0buSkzLJQNYB20HmdjfK9/9R2PJJ9CJg"
