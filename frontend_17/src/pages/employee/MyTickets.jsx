@@ -750,17 +750,20 @@ const E_Ticket = () => {
   const statusMap = useMemo(() => {
     const map = {};
     status.forEach(({ mainStatus, subStatus }) => {
-      if (!map[mainStatus]) map[mainStatus] = [];
+      if (!mainStatus) return; // 🚨 skip if null/undefined
+  
+      const key = String(mainStatus).toLowerCase();
+  
+      if (!map[key]) map[key] = [];
+  
       if (Array.isArray(subStatus)) {
-        map[mainStatus].push(...subStatus);
-      } else {
-        map[mainStatus].push(subStatus);
+        map[key].push(...subStatus);
+      } else if (subStatus) {
+        map[key].push(subStatus);
       }
     });
     return map;
   }, [status]);
-
-  const getSubStatusFromMainStatus = (mainSt) => statusMap[mainSt] || [];
 
   const sortedTickets = React.useMemo(() => {
     let filtered = tickets.filter(
