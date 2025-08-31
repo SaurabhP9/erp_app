@@ -103,13 +103,14 @@ export default function ProjectList() {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      return; // Stop if form is invalid
+      console.log("errors");
+      return;
     }
-
+  
     try {
       if (editIndex !== null) {
-        const projectId = projects[editIndex]._id; // Assuming _id is the unique identifier
-        const updated = await updateProject(projectId, form);
+        const projectId = projects[editIndex].projectId; // Use projectId
+        const updated = await updateProject(projectId, form); // Capture response
         const updatedList = [...projects];
         updatedList[editIndex] = updated;
         setProjects(updatedList);
@@ -120,9 +121,8 @@ export default function ProjectList() {
       handleClose();
     } catch (err) {
       console.error("Error in submit:", err);
-      // You might want to display a user-friendly error message here
     }
-  };
+  };  
 
   const handleDelete = async (index) => {
     try {
@@ -136,12 +136,14 @@ export default function ProjectList() {
     }
   };
 
-  const filteredProjects = projects.filter((p) =>
-    Object.values(p).some(
-      (val) =>
-        typeof val === "string" &&
-        val.toLowerCase().includes(search.toLowerCase())
-    )
+  const filteredProjects = projects?.filter(
+    (p) =>
+      p &&
+      Object.values(p).some(
+        (val) =>
+          typeof val === "string" &&
+          val.toLowerCase().includes(search.toLowerCase())
+      )
   );
 
   const sortedProjects = [...filteredProjects].sort((a, b) => {

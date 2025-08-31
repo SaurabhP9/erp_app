@@ -179,7 +179,7 @@ export default function Dashboard() {
       const submitForm = { ...form };
 
       // Handle department value based on disabled state for submission
-      if (isDepartmentDisabled) {
+      if (!isDepartmentDisabled) {
         // If department is disabled, you might want to:
         // 1. Delete the field from the payload (if backend ignores it)
         delete submitForm.department;
@@ -610,6 +610,7 @@ export default function Dashboard() {
                     department: deptObj?.department || "", // keep name for backend
                   }));
                 }}
+                placeholder=""
               >
                 <MenuItem value="">Select</MenuItem>
                 {departments.map((dept) => (
