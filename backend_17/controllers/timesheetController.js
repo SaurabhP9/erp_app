@@ -208,7 +208,7 @@ exports.getTimesheetForEmployee = async (req, res) => {
 // Create or add timesheet
 exports.addTimesheet = async (req, res) => {
   try {
-    const { employeeId, ticket, date } = req.body;
+    const { employeeId, ticket, date, workingTime} = req.body;
 
     // Prevent duplicate entry for same employee+ticket+date
     const existing = await Timesheet.findOne({ employeeId, ticket, date });
@@ -218,7 +218,18 @@ exports.addTimesheet = async (req, res) => {
         .json({ message: "Timesheet already exists for this ticket and date" });
     }
 
-    const newEntry = new Timesheet(req.body);
+    let formattedWorkingTime = workingTime;
+    if (typeof workingTime === "number") {
+      const hrs = Math.floor(workingTime);
+      const mins = Math.round((workingTime - hrs) * 60);
+      formattedWorkingTime = parseFloat(`${hrs}.${mins.toString().padStart(2, "0")}`);
+    }
+
+    const newEntry = new Timesheet({
+      ...req.body,
+      workingTime: formattedWorkingTime,
+    });
+    console.log("new TS", newEntry);
     const saved = await newEntry.save();
     res.status(201).json(saved);
   } catch (err) {

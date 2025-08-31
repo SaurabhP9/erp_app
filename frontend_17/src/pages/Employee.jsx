@@ -179,7 +179,7 @@ export default function Dashboard() {
       const submitForm = { ...form };
 
       // Handle department value based on disabled state for submission
-      if (isDepartmentDisabled) {
+      if (!isDepartmentDisabled) {
         // If department is disabled, you might want to:
         // 1. Delete the field from the payload (if backend ignores it)
         delete submitForm.department;
@@ -594,14 +594,13 @@ export default function Dashboard() {
               required // Keep required if it's conceptually required when enabled
               error={!!formErrors.department}
             >
-              <InputLabel>Department</InputLabel>
               <TextField
                 select
                 fullWidth
                 required
                 label="Department"
                 name="departmentId"
-                value={form.departmentId || ""}   // ✅ use departmentId only
+                value={form.departmentId || ""} 
                 onChange={(e) => {
                   const deptId = e.target.value;
                   const deptObj = departments.find((d) => d._id === deptId);
@@ -611,6 +610,7 @@ export default function Dashboard() {
                     department: deptObj?.department || "", // keep name for backend
                   }));
                 }}
+                placeholder=""
               >
                 <MenuItem value="">Select</MenuItem>
                 {departments.map((dept) => (

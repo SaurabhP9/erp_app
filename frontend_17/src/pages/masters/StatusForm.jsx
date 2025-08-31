@@ -99,35 +99,32 @@ export default function StatusList() {
 
   const handleSave = async () => {
     if (!validateForm()) {
-      return; // Stop if form is invalid
+      return;
     }
-
     const statusData = {
       subStatus: inputName.trim(),
-      mainStatus: inputMain,
+      mainStatus: inputMain.trim(),
       updatedBy: currentUserId,
     };
-
+  
     try {
       if (editIndex !== null) {
         const id = statuses[editIndex]._id;
-        const updated = await updateStatus(id, statusData);
-        const updatedList = [...statuses];
-        updatedList[editIndex] = updated;
-        setStatuses(updatedList);
+        await updateStatus(id, statusData);
       } else {
-        const created = await createStatus({
+        await createStatus({
           ...statusData,
           createdBy: currentUserId,
         });
-        setStatuses([...statuses, created]);
       }
+  
+      await fetchStatuses();
       handleClose();
     } catch (err) {
       console.error("Error saving status", err);
-      // Display a user-friendly error message
+      // Optionally show a toast/snackbar error here
     }
-  };
+  };  
 
   const handleDelete = async (index) => {
     try {
@@ -163,8 +160,8 @@ export default function StatusList() {
 
   const filtered = Array.isArray(statuses)
     ? statuses.filter((s) =>
-        (s?.subStatus || "").toLowerCase().includes(search.toLowerCase())
-      )
+      (s?.subStatus || "").toLowerCase().includes(search.toLowerCase())
+    )
     : [];
 
   return (
@@ -340,40 +337,22 @@ export default function StatusList() {
               error={!!formErrors.subStatus} // Show error state
               helperText={formErrors.subStatus} // Display error message
             />
-            <FormControl
+            <TextField
+              label="Main Status"
               fullWidth
               size="small"
+              value={inputMain}
+              onChange={(e) => {
+                setInputMain(e.target.value);
+                setFormErrors((prevErrors) => ({
+                  ...prevErrors,
+                  mainStatus: "",
+                }));
+              }}
               required
               error={!!formErrors.mainStatus}
-            >
-              {/* <InputLabel>Main Status</InputLabel> */}
-              <TextField // Using TextField with select prop to make it a select
-                select
-                label="Main Status"
-                fullWidth
-                size="small" // Consistent size
-                value={inputMain}
-                onChange={(e) => {
-                  setInputMain(e.target.value);
-                  setFormErrors((prevErrors) => ({
-                    ...prevErrors,
-                    mainStatus: "",
-                  })); // Clear error on change
-                }}
-              >
-                {mainStatusOptions.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt.charAt(0).toUpperCase() + opt.slice(1)}{" "}
-                    {/* Capitalize first letter */}
-                  </MenuItem>
-                ))}
-              </TextField>
-              {formErrors.mainStatus && (
-                <Typography color="error" variant="caption">
-                  {formErrors.mainStatus}
-                </Typography>
-              )}
-            </FormControl>
+              helperText={formErrors.mainStatus}
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
