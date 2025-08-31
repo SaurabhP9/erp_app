@@ -594,14 +594,13 @@ export default function Dashboard() {
               required // Keep required if it's conceptually required when enabled
               error={!!formErrors.department}
             >
-              <InputLabel>Department</InputLabel>
               <TextField
                 select
                 fullWidth
                 required
                 label="Department"
                 name="departmentId"
-                value={form.departmentId || ""}   // ✅ use departmentId only
+                value={form.departmentId || ""} 
                 onChange={(e) => {
                   const deptId = e.target.value;
                   const deptObj = departments.find((d) => d._id === deptId);
