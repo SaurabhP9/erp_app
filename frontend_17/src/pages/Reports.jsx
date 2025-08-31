@@ -56,6 +56,7 @@ export default function Reports() {
     "Employee",
     "Project",
     "Status",
+    "Target Date",
     "Ticket No",
     "Subject",
     "Category",
@@ -82,6 +83,11 @@ export default function Reports() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString("en-GB"); // DD/MM/YYYY format
+  };
+
   const applyFilters = async () => {
     setLoading(true);
     setShowReport(false);
@@ -103,6 +109,7 @@ export default function Reports() {
       row.employee,
       row.project,
       row.mainStatus,
+      row.targetDate ? formatDate(row.targetDate) : "",
       row.ticketNo,
       row.subject || "",
       row.category || "",
@@ -388,7 +395,7 @@ export default function Reports() {
                           {i + 1}
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
-                          {formatDateTime(row.createdTime)}
+                          {formatDate(row.createdTime)}
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
                           {row.employee}
@@ -398,6 +405,9 @@ export default function Reports() {
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
                           {row.mainStatus}
+                        </TableCell>
+                        <TableCell sx={{ border: "1px solid #ccc" }}>
+                          {row.targetDate ? formatDate(row.targetDate) : ""}
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
                           {row.ticketNo}
