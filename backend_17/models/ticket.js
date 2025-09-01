@@ -76,9 +76,7 @@ const ticketSchema = new mongoose.Schema({
     },
   ],
   mainStatus: {
-    type: String,
-    enum: ["open", "inProcess", "closed", "handover", "working"],
-    default: "open",
+    type: String
   },
   createdBy: String,
   createdTime: { type: String, default: () => new Date().toISOString() },
