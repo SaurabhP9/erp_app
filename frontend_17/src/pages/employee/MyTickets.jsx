@@ -1303,8 +1303,8 @@ const E_Ticket = () => {
                   select
                   fullWidth
                   required
-                  label={formData.mainStatus === "handover" ? "Assign To Client" : "Assign To Employee"}
-                  name={formData.mainStatus === "handover" ? "clientId" : "employeeId"}
+                  label={formData.mainStatus?.toLowerCase() === "handover" ? "Assign To Client" : "Assign To Employee"}
+                  name={formData.mainStatus?.toLowerCase() === "handover" ? "clientId" : "employeeId"}
                   value={
                     formData.mainStatus === "handover"
                       ? clients.find((c) => c._id === formData.clientId)?._id || ""
