@@ -6,10 +6,10 @@ exports.getHomeSummary = async (req, res) => {
 
     const ticketSummary = {
       total: allTickets.length,
-      open: allTickets.filter((t) => t.mainStatus === "open").length,
-      closed: allTickets.filter((t) => t.mainStatus === "closed").length,
-      handover: allTickets.filter((t) => t.mainStatus === "handover").length,
-      inProgress: allTickets.filter((t) => t.mainStatus === "inProcess").length,
+      open: allTickets.filter((t) => t.mainStatus == "open").length,
+      closed: allTickets.filter((t) => t.mainStatus == "closed").length,
+      handover: allTickets.filter((t) => t.mainStatus == "handover").length,
+      inProgress: allTickets.filter((t) => t.mainStatus == "inProcess").length,
     };
 
     const employees = await User.find({ role: "employee" }).lean();
@@ -20,11 +20,11 @@ exports.getHomeSummary = async (req, res) => {
         );
 
         const ticketStatus = {
-          open: empTickets.filter((t) => t.mainStatus === "open").length,
-          closed: empTickets.filter((t) => t.mainStatus === "closed").length,
-          handover: empTickets.filter((t) => t.mainStatus === "handover")
+          open: empTickets.filter((t) => t.mainStatus == "open").length,
+          closed: empTickets.filter((t) => t.mainStatus == "closed").length,
+          handover: empTickets.filter((t) => t.mainStatus == "handover")
             .length,
-          inProcess: empTickets.filter((t) => t.mainStatus === "inProcess")
+          inProcess: empTickets.filter((t) => t.mainStatus == "inProcess")
             .length,
           // working: empTickets.filter((t) => t.mainStatus === "working").length,
         };
@@ -47,11 +47,11 @@ exports.getHomeSummary = async (req, res) => {
         );
 
         const ticketStatus = {
-          open: userTickets.filter((t) => t.mainStatus === "open").length,
-          closed: userTickets.filter((t) => t.mainStatus === "closed").length,
-          handover: userTickets.filter((t) => t.mainStatus === "handover")
+          open: userTickets.filter((t) => t.mainStatus == "open").length,
+          closed: userTickets.filter((t) => t.mainStatus == "closed").length,
+          handover: userTickets.filter((t) => t.mainStatus == "handover")
             .length,
-          inProcess: userTickets.filter((t) => t.mainStatus === "inProcess")
+          inProcess: userTickets.filter((t) => t.mainStatus == "inProcess")
             .length,
         };
 
@@ -93,10 +93,10 @@ exports.getTicketSummaryByRole = async (req, res) => {
         ).length;
 
         const ticketStatus = {
-          open: userTickets.filter((t) => t.mainStatus === "open").length,
-          closed: userTickets.filter((t) => t.mainStatus === "closed").length,
+          open: userTickets.filter((t) => t.mainStatus == "open").length,
+          closed: userTickets.filter((t) => t.mainStatus == "closed").length,
           handover: handoverCount,
-          inProgress: userTickets.filter((t) => t.mainStatus === "inProcess").length
+          inProgress: userTickets.filter((t) => t.mainStatus == "inProcess").length
         };
 
         return {

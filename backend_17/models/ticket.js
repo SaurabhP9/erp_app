@@ -19,6 +19,10 @@ const ticketSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  clientId: {
+    type: String, // Assigned to (client _id)
+    default: null,
+  },
   project: {
     type: String,
     required: true,
@@ -63,6 +67,7 @@ const ticketSchema = new mongoose.Schema({
     {
       fromEmployeeId: String,
       toEmployeeId: String,
+      toClientId: String,
       reassignedBy: String,
       reassignedAt: { type: Date, default: Date.now },
     },

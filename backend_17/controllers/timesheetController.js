@@ -4,82 +4,82 @@ const Timesheet = require("../models/timesheet");
 const sendEmail = require("../utils/sendMail");
 const dayjs = require("dayjs");
 
-exports.getTimesheetFromTickets = async (req, res) => {
-  try {
-    const tickets = await Ticket.find({});
+// exports.getTimesheetFromTickets = async (req, res) => {
+//   try {
+//     const tickets = await Ticket.find({});
 
-    const userIds = [
-      ...new Set([
-        ...tickets.map((t) => t.employeeId),
-        ...tickets.map((t) => t.userId),
-      ]),
-    ];
+//     const userIds = [
+//       ...new Set([
+//         ...tickets.map((t) => t.employeeId),
+//         ...tickets.map((t) => t.userId),
+//       ]),
+//     ];
 
-    const users = await User.find({ _id: { $in: userIds } });
-    const userMap = {};
-    users.forEach((u) => {
-      userMap[u._id] = u.name;
-    });
+//     const users = await User.find({ _id: { $in: userIds } });
+//     const userMap = {};
+//     users.forEach((u) => {
+//       userMap[u._id] = u.name;
+//     });
 
-    const timesheetData = tickets.map((ticket) => {
-      const employeeName =
-        ticket.employee || userMap[ticket.employeeId] || "Unknown";
-      const createdTime = ticket.createdTime
-        ? new Date(ticket.createdTime)
-        : null;
+//     const timesheetData = tickets.map((ticket) => {
+//       const employeeName =
+//         ticket.employee || userMap[ticket.employeeId] || "Unknown";
+//       const createdTime = ticket.createdTime
+//         ? new Date(ticket.createdTime)
+//         : null;
 
-      let timeRange = "-";
-      let totalWorkFormatted = "-";
-      let dateFormatted = "-";
+//       let timeRange = "-";
+//       let totalWorkFormatted = "-";
+//       let dateFormatted = "-";
 
-      if (createdTime instanceof Date && !isNaN(createdTime)) {
-        let endTime;
+//       if (createdTime instanceof Date && !isNaN(createdTime)) {
+//         let endTime;
 
-        if (ticket.mainStatus?.toLowerCase() === "closed") {
-          // Use updatedTime only if it's a valid date string
-          endTime = new Date(ticket.updatedTime);
-          if (!(endTime instanceof Date) || isNaN(endTime)) {
-            console.warn("Invalid updatedTime, falling back to current time");
-            endTime = new Date();
-          }
-        } else {
-          endTime = new Date();
-        }
+//         if (ticket.mainStatus?.toLowerCase() === "closed") {
+//           // Use updatedTime only if it's a valid date string
+//           endTime = new Date(ticket.updatedTime);
+//           if (!(endTime instanceof Date) || isNaN(endTime)) {
+//             console.warn("Invalid updatedTime, falling back to current time");
+//             endTime = new Date();
+//           }
+//         } else {
+//           endTime = new Date();
+//         }
 
-        const totalMinutes = Math.floor((endTime - createdTime) / 60000);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        totalWorkFormatted = `${hours} Hrs ${minutes} Min`;
+//         const totalMinutes = Math.floor((endTime - createdTime) / 60000);
+//         const hours = Math.floor(totalMinutes / 60);
+//         const minutes = totalMinutes % 60;
+//         totalWorkFormatted = `${hours} Hrs ${minutes} Min`;
 
-        const formatTime = (date) =>
-          new Date(date).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          });
+//         const formatTime = (date) =>
+//           new Date(date).toLocaleTimeString([], {
+//             hour: "2-digit",
+//             minute: "2-digit",
+//             hour12: false,
+//           });
 
-        timeRange = `${formatTime(createdTime)} To ${formatTime(endTime)}`;
-        dateFormatted = createdTime.toISOString().split("T")[0];
-      }
+//         timeRange = `${formatTime(createdTime)} To ${formatTime(endTime)}`;
+//         dateFormatted = createdTime.toISOString().split("T")[0];
+//       }
 
-      return {
-        employee: employeeName,
-        ticketId: ticket.ticketNo || ticket._id?.toString().slice(-6),
-        subject: ticket.subject || "-",
-        task: ticket.issue || "-",
-        date: dateFormatted,
-        time: timeRange,
-        status: ticket.mainStatus,
-        totalWork: totalWorkFormatted,
-      };
-    });
+//       return {
+//         employee: employeeName,
+//         ticketId: ticket.ticketNo || ticket._id?.toString().slice(-6),
+//         subject: ticket.subject || "-",
+//         task: ticket.issue || "-",
+//         date: dateFormatted,
+//         time: timeRange,
+//         status: ticket.mainStatus,
+//         totalWork: totalWorkFormatted,
+//       };
+//     });
 
-    return res.status(200).json(timesheetData);
-  } catch (err) {
-    console.error("Timesheet generation failed:", err.message);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-};
+//     return res.status(200).json(timesheetData);
+//   } catch (err) {
+//     console.error("Timesheet generation failed:", err.message);
+//     return res.status(500).json({ error: "Internal Server Error" });
+//   }
+// };
 
 exports.getTimesheetForUser = async (req, res) => {
   try {
@@ -139,73 +139,74 @@ exports.getTimesheetForUser = async (req, res) => {
   }
 };
 
-exports.getTimesheetForEmployee = async (req, res) => {
-  try {
-    const { empId } = req.params;
+// exports.getTimesheetForEmployee = async (req, res) => {
+//   try {
+//     const { empId } = req.params;
 
-    const tickets = await Ticket.find({
-      employeeId: empId,
-    }).populate("employee");
+//     const tickets = await Ticket.find({
+//       employeeId: empId,
+//     }).populate("employee");
 
-    const timesheetData = tickets.map((ticket) => {
-      const employeeName = ticket.employee || "Unknown";
-      const createdTime = ticket.createdTime
-        ? new Date(ticket.createdTime)
-        : null;
+//     const timesheetData = tickets.map((ticket) => {
+//       const employeeName = ticket.employee || "Unknown";
+//       const createdTime = ticket.createdTime
+//         ? new Date(ticket.createdTime)
+//         : null;
 
-      let timeRange = "-";
-      let totalWorkFormatted = "-";
-      let dateFormatted = "-";
+//       let timeRange = "-";
+//       let totalWorkFormatted = "-";
+//       let dateFormatted = "-";
 
-      if (createdTime instanceof Date && !isNaN(createdTime)) {
-        let endTime;
+//       if (createdTime instanceof Date && !isNaN(createdTime)) {
+//         let endTime;
 
-        if (ticket.mainStatus?.toLowerCase() === "closed") {
-          // Use updatedTime only if it's a valid date string
-          endTime = new Date(ticket.updatedTime);
-          if (!(endTime instanceof Date) || isNaN(endTime)) {
-            console.warn("Invalid updatedTime, falling back to current time");
-            endTime = new Date();
-          }
-        } else {
-          endTime = new Date();
-        }
+//         if (ticket.mainStatus?.toLowerCase() === "closed") {
+//           // Use updatedTime only if it's a valid date string
+//           endTime = new Date(ticket.updatedTime);
+//           if (!(endTime instanceof Date) || isNaN(endTime)) {
+//             console.warn("Invalid updatedTime, falling back to current time");
+//             endTime = new Date();
+//           }
+//         } else {
+//           endTime = new Date();
+//         }
 
-        const totalMinutes = Math.floor((endTime - createdTime) / 60000);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        totalWorkFormatted = `${hours} Hrs ${minutes} Min`;
+//         const totalMinutes = Math.floor((endTime - createdTime) / 60000);
+//         const hours = Math.floor(totalMinutes / 60);
+//         const minutes = totalMinutes % 60;
+//         totalWorkFormatted = `${hours} Hrs ${minutes} Min`;
 
-        const formatTime = (date) =>
-          new Date(date).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          });
+//         const formatTime = (date) =>
+//           new Date(date).toLocaleTimeString([], {
+//             hour: "2-digit",
+//             minute: "2-digit",
+//             hour12: false,
+//           });
 
-        timeRange = `${formatTime(createdTime)} To ${formatTime(endTime)}`;
-        dateFormatted = createdTime.toISOString().split("T")[0];
-      }
+//         timeRange = `${formatTime(createdTime)} To ${formatTime(endTime)}`;
+//         dateFormatted = createdTime.toISOString().split("T")[0];
+//       }
 
-      return {
-        employee: employeeName,
-        ticket: `#${ticket._id.toString().slice(-6)}`,
-        subject: ticket.subject || "-",
-        task: ticket.issue || "-",
-        date: dateFormatted,
-        time: timeRange,
-        totalWork: totalWorkFormatted,
-      };
-    });
+//       return {
+//         employee: employeeName,
+//         ticket: `#${ticket._id.toString().slice(-6)}`,
+//         subject: ticket.subject || "-",
+//         task: ticket.issue || "-",
+//         date: dateFormatted,
+//         time: timeRange,
+//         totalWork: totalWorkFormatted,
+//       };
+//     });
 
-    return res.status(200).json(timesheetData);
-  } catch (err) {
-    console.error("User Timesheet fetch failed:", err.message);
-    return res.status(500).json({ error: "Failed to fetch user timesheet" });
-  }
-};
+//     return res.status(200).json(timesheetData);
+//   } catch (err) {
+//     console.error("User Timesheet fetch failed:", err.message);
+//     return res.status(500).json({ error: "Failed to fetch user timesheet" });
+//   }
+// };
 
 // Create or add timesheet
+
 exports.addTimesheet = async (req, res) => {
   try {
     const { employeeId, ticket, date, workingTime} = req.body;
@@ -229,7 +230,7 @@ exports.addTimesheet = async (req, res) => {
       ...req.body,
       workingTime: formattedWorkingTime,
     });
-    console.log("new TS", newEntry);
+
     const saved = await newEntry.save();
     res.status(201).json(saved);
   } catch (err) {
@@ -245,21 +246,20 @@ exports.getTimesheetsByEmployee = async (req, res) => {
     const timesheets = await Timesheet.find({ employeeId: id }).sort({
       createdAt: -1,
     });
-
     res.json(timesheets);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch timesheets", error: err });
   }
 };
 
-exports.fetchTimesheetForAllEmployees = async (req, res) => {
-  try {
-    const timesheets = await Timesheet.find({}).sort({ createdAt: -1 });
-    res.json(timesheets);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch timesheets", error: err });
-  }
-};
+// exports.fetchTimesheetForAllEmployees = async (req, res) => {
+//   try {
+//     const timesheets = await Timesheet.find({}).sort({ createdAt: -1 });
+//     res.json(timesheets);
+//   } catch (err) {
+//     res.status(500).json({ message: "Failed to fetch timesheets", error: err });
+//   }
+// };
 
 exports.fetchTimesheetsWithTicketStatus = async (req, res) => {
   try {

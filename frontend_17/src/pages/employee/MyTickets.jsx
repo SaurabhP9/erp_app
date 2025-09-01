@@ -92,6 +92,7 @@ const initialFormData = {
   mainStatus: "",
   attachments: [],
   targetDate: "",
+  clientId: ""
 };
 
 const E_Ticket = () => {
@@ -151,7 +152,7 @@ const E_Ticket = () => {
   const [snackbarMessage, setSnackbarMessage] = useState(""); // New: State for Snackbar message
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // New: State for Snackbar severity
   const [clients, setClients] = useState([]);
-  const [isHandover, setIsHandover] = useState(null);
+  const [isTargetDatePresent, setIsTargetDatePresent] = useState(false);
 
 
   const cellStyle = {
@@ -272,9 +273,9 @@ const E_Ticket = () => {
       ];
 
       const filtered = statusQuery
-        ? combined.filter((t) => t.mainStatus === statusQuery)
+        ? combined.filter((t) => t.mainStatus == statusQuery)
         : combined;
-
+      console.log(filtered);
       setTickets(filtered);
       setProjects(proj);
       setDepartments(dept); // Fixed: setDepartments is now defined
@@ -292,12 +293,6 @@ const E_Ticket = () => {
     }
   };
 
-  // const isClosed = editMode && formData.mainStatus?.toLowerCase() === "closed";
-  // const alreadyClosed =
-  //   editMode && viewTicket?.mainStatus?.toLowerCase() === "closed";
-
-  // const isClosed = alreadyClosed;
-  // Lock only if the ticket was already closed in DB when we started editing
   const lockAllFields = originalMainStatus === "closed";
 
   const applyFilters = (ticket) => {
@@ -348,42 +343,65 @@ const E_Ticket = () => {
       matchesToDate
     );
   };
+  // const handleChange = (e) => {
+  //   const { name, value, files } = e.target;
+
+  //   if (name === "attachments") {
+  //     const newFiles = Array.from(files);
+
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       attachments: [
+  //         ...(prev.attachments || []),
+  //         ...newFiles,
+  //       ],
+  //     }));
+  //     return;
+  //   }
+
+  //   if (typeof value === "object" && value !== null && value._id) {
+  //     const id = value._id;
+
+  //     const fieldMap = {
+  //       project: { idKey: "projectId", nameKey: "project", labelKey: "project" },
+  //       category: { idKey: "categoryId", nameKey: "category", labelKey: "category" },
+  //       department: { idKey: "departmentId", nameKey: "department", labelKey: "department" },
+  //       priority: { idKey: "priorityId", nameKey: "priority", labelKey: "priority" },
+  //       employeeId: { idKey: "employeeId", nameKey: "employee", labelKey: "name" },
+  //     };
+
+  //     if (fieldMap[name]) {
+  //       const { idKey, nameKey, labelKey } = fieldMap[name];
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         [idKey]: id,
+  //         [nameKey]: value[labelKey],
+  //       }));
+  //     }
+
+  //     return;
+  //   }
+
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
 
-    if (name === "attachments") {
-      const newFiles = Array.from(files);
-
+    if (name == "employeeId") {
+      const selectedEmployee = employees.find((emp) => emp._id === value);
       setFormData((prev) => ({
         ...prev,
-        attachments: [
-          ...(prev.attachments || []),
-          ...newFiles,
-        ],
+        employeeId: value,
+        employee: selectedEmployee?.name || "",
       }));
       return;
     }
 
-    if (typeof value === "object" && value !== null && value._id) {
-      const id = value._id;
-
-      const fieldMap = {
-        project: { idKey: "projectId", nameKey: "project", labelKey: "project" },
-        category: { idKey: "categoryId", nameKey: "category", labelKey: "category" },
-        department: { idKey: "departmentId", nameKey: "department", labelKey: "department" },
-        priority: { idKey: "priorityId", nameKey: "priority", labelKey: "priority" },
-        employeeId: { idKey: "employeeId", nameKey: "employee", labelKey: "name" },
-      };
-
-      if (fieldMap[name]) {
-        const { idKey, nameKey, labelKey } = fieldMap[name];
-        setFormData((prev) => ({
-          ...prev,
-          [idKey]: id,
-          [nameKey]: value[labelKey],
-        }));
-      }
-
+    if (name == "clientId") {
+      const selectedClient = clients.find((c) => c._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        clientId: value,
+        client: selectedClient?.name || "",
+      }));
       return;
     }
 
@@ -392,6 +410,7 @@ const E_Ticket = () => {
       [name]: value,
     }));
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -407,68 +426,34 @@ const E_Ticket = () => {
 
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
-            const existing = value.filter((file) => typeof file === "string"); // Cloudinary URLs
-            const newFiles = value.filter((file) => file instanceof File);     // New uploads
+            const existing = value.filter((file) => typeof file === "string"); // old files
+            const newFiles = value.filter((file) => file instanceof File);     // new uploads
 
-            // Send old URLs separately
             if (existing.length > 0) {
               form.append("existingAttachments", JSON.stringify(existing));
             }
-            // Send only new files as FormData
             newFiles.forEach((file) => form.append("attachments", file));
           } else if (key !== "handoverHistory") {
-            form.append(key, value);
+            form.append(key, value ?? "");
           }
         });
 
-        // If handover happened during edit
-        const isHandover =
-          formData.mainStatus === "handover" &&
-          formData.employeeId !== originalTicket?.employeeId;
-
-        if (isHandover) {
-          const existingHistory = originalTicket?.handoverHistory || [];
-
-          const newEntry = {
-            fromEmployeeId: originalTicket.employeeId,
-            toEmployeeId: formData.employeeId,
-            reassignedBy: currentUserId,
-            reassignedAt: new Date().toISOString(),
-          };
-
-          // Combine + flatten into FormData as indexed fields
-          const combinedHistory = [...existingHistory, newEntry];
-          combinedHistory.forEach((entry, index) => {
-            form.append(`handoverHistory[${index}].fromEmployeeId`, entry.fromEmployeeId);
-            form.append(`handoverHistory[${index}].toEmployeeId`, entry.toEmployeeId);
-            form.append(`handoverHistory[${index}].reassignedBy`, entry.reassignedBy);
-            form.append(`handoverHistory[${index}].reassignedAt`, new Date(entry.reassignedAt).toISOString());
-          });
-        }
-
+        setIsTargetDatePresent(!!originalTicket.targetDate);
+        console.log(form);
         createdOrUpdated = await updateTicket(editId, form);
-
+        console.log(createdOrUpdated);
         setTickets((prev) =>
-          prev.map((t) => (t._id === editId ? createdOrUpdated : t))
+          prev.map((t) =>
+            t._id === editId
+              ? {
+                ...createdOrUpdated,
+                employee:
+                  employees.find((e) => e._id === createdOrUpdated.employeeId)
+                    ?.name || "",
+              }
+              : t
+          )
         );
-
-        // Add comment if reassigned
-        if (originalTicket?.employeeId !== formData.employeeId) {
-          const selectedEmployee = employees.find(
-            (emp) => emp._id === formData.employeeId
-          );
-
-          const reassignmentComment = {
-            ticketId: editId,
-            userId: currentUserId,
-            comment: `Ticket reassigned from ${users.find((u) => u._id === originalTicket.employeeId)?.name ||
-              "Unassigned"
-              } to ${selectedEmployee?.name || "Unassigned"}.`,
-            visibility: "internal",
-          };
-
-          await createComment(reassignmentComment);
-        }
 
         setSnackbarMessage("Ticket updated successfully!");
         setSnackbarSeverity("success");
@@ -520,6 +505,7 @@ const E_Ticket = () => {
       setSnackbarOpen(true);
     } finally {
       setIsSubmitting(false);
+      setIsTargetDatePresent(false)
     }
 
     setFormData(initialFormData);
@@ -642,19 +628,16 @@ const E_Ticket = () => {
 
   const handleEdit = (ticket) => {
     const selectedProject = projects.find((p) => p._id === ticket.projectId);
-    const selectedCategory = categories.find(
-      (c) => c._id === ticket.categoryId
-    );
-    const selectedPriority = priorities.find(
-      (p) => p._id === ticket.priorityId
-    );
+    const selectedCategory = categories.find((c) => c._id === ticket.categoryId);
+    const selectedPriority = priorities.find((p) => p._id === ticket.priorityId);
     const selectedEmployee = employees.find((e) => e._id === ticket.employeeId);
 
     setFormData({
+      ...formData,
       name: ticket.name,
       subject: ticket.subject,
       projectId: ticket.projectId,
-      project: selectedProject?.project || "",
+      project: selectedProject?._id || "",
       departmentId: ticket.departmentId,
       department: ticket.department,
       categoryId: ticket.categoryId,
@@ -665,9 +648,12 @@ const E_Ticket = () => {
       mainStatus: ticket.mainStatus,
       employeeId: ticket.employeeId,
       employee: selectedEmployee?.name || "",
+      clientId: ticket.clientId || "",   // ✅ include clientId
       attachments: [],
       targetDate: ticket.targetDate || "",
     });
+
+    setIsTargetDatePresent(!!ticket.targetDate); // ✅ disable field if present
     setOriginalMainStatus((ticket.mainStatus || "").toLowerCase());
     setEditMode(true);
     setEditId(ticket._id);
@@ -751,11 +737,11 @@ const E_Ticket = () => {
     const map = {};
     status.forEach(({ mainStatus, subStatus }) => {
       if (!mainStatus) return; // 🚨 skip if null/undefined
-  
+
       const key = String(mainStatus).toLowerCase();
-  
+
       if (!map[key]) map[key] = [];
-  
+
       if (Array.isArray(subStatus)) {
         map[key].push(...subStatus);
       } else if (subStatus) {
@@ -768,10 +754,10 @@ const E_Ticket = () => {
   const sortedTickets = React.useMemo(() => {
     let filtered = tickets.filter(
       (ticket) =>
-        ticket.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.issue.toLowerCase().includes(searchTerm.toLowerCase())
+        ticket?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket?.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket?.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket?.issue?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     filtered = filtered.filter(applyFilters);
 
@@ -835,7 +821,7 @@ const E_Ticket = () => {
                   "assignee",
                   "priority",
                 ].map((key) => (
-                  <Grid item xs={12} key={key}>
+                  <Grid xs={12} key={key}>
                     <TextField
                       fullWidth
                       size="small"
@@ -850,7 +836,7 @@ const E_Ticket = () => {
                     />
                   </Grid>
                 ))}
-                <Grid item xs={12}>
+                <Grid xs={12}>
                   <TextField
                     fullWidth
                     size="small"
@@ -866,7 +852,7 @@ const E_Ticket = () => {
                     }
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid xs={12}>
                   <TextField
                     fullWidth
                     size="small"
@@ -882,12 +868,12 @@ const E_Ticket = () => {
                     }
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid xs={6}>
                   <Button variant="outlined" onClick={exportToExcel} fullWidth>
                     Export Excel
                   </Button>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid xs={6}>
                   <Button variant="outlined" onClick={exportToPDF} fullWidth>
                     Export PDF
                   </Button>
@@ -1118,8 +1104,8 @@ const E_Ticket = () => {
                           >
                             <Chip
                               label={
-                                statusMap[ticket.mainStatus]
-                                  ? statusMap[ticket.mainStatus].join(", ")
+                                statusMap[ticket.mainStatus?.toLowerCase()]
+                                  ? statusMap[ticket.mainStatus?.toLowerCase()].join(", ")
                                   : "—"
                               }
                               size="small"
@@ -1173,7 +1159,7 @@ const E_Ticket = () => {
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2} direction="column">
-              <Grid item>
+              <Grid>
                 <TextField
                   fullWidth
                   required
@@ -1184,7 +1170,7 @@ const E_Ticket = () => {
                   disabled={lockAllFields}
                 />
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   fullWidth
                   required
@@ -1195,7 +1181,7 @@ const E_Ticket = () => {
                   disabled={lockAllFields}
                 />
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
@@ -1217,20 +1203,24 @@ const E_Ticket = () => {
                 </TextField>
               </Grid>
 
-              <Grid item>
-                <TextField
-                  fullWidth
-                  required={!formData.targetDate}
-                  type="date"
-                  
-                  name="targetDate"
-                  value={formData.targetDate || ""}
-                  onChange={handleChange}
-                  disabled={lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)}
-                />
-              </Grid>
+              <TextField
+                margin="dense"
+                type="date"
+                fullWidth
+                variant="outlined"
+                required={!formData.targetDate}
+                value={
+                  formData.targetDate
+                    ? dayjs(formData.targetDate).format("YYYY-MM-DD")
+                    : ""
+                }
+                onChange={(e) =>
+                  setFormData({ ...formData, targetDate: e.target.value })
+                }
+                disabled={isTargetDatePresent}
+              />
 
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
@@ -1251,7 +1241,7 @@ const E_Ticket = () => {
                   ))}
                 </TextField>
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
@@ -1272,7 +1262,7 @@ const E_Ticket = () => {
                   ))}
                 </TextField>
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
@@ -1285,7 +1275,7 @@ const E_Ticket = () => {
                     lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)
                   }
                 >
-                   <MenuItem value="">Select</MenuItem>
+                  <MenuItem value="">Select</MenuItem>
                   {status.map((st) => {
                     if (st.mainStatus === "handover" && !functional) {
                       return null;
@@ -1298,24 +1288,26 @@ const E_Ticket = () => {
                   })}
                 </TextField>
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
                   required
-                  label={formData.mainStatus?.toLowerCase() == "handover" ? "Assign To Client" : "Assign To Employee"}
-                  name={formData.mainStatus?.toLowerCase() == "handover" ? "clientId" : "employeeId"}
-                  value={
-                    formData.mainStatus == "handover"
-                      ? clients.find((c) => c._id === formData.clientId)?._id || ""
-                      : employees.find((e) => e._id === formData.employeeId)?._id || ""
+                  label={
+                    formData.mainStatus?.toLowerCase() === "handover"
+                      ? "Assign To Client"
+                      : "Assign To Employee"
                   }
-                  disabled={lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)}
+                  name={formData.mainStatus?.toLowerCase() === "handover" ? "clientId" : "employeeId"}
+                  value={
+                    formData.mainStatus?.toLowerCase() === "handover"
+                      ? formData.clientId || ""
+                      : formData.employeeId || ""
+                  }
                   onChange={handleChange}
                 >
                   <MenuItem value="">Select</MenuItem>
-
-                  {formData.mainStatus?.toLocaleLowerCase() == "handover"
+                  {formData.mainStatus?.toLowerCase() === "handover"
                     ? clients.map((client) => (
                       <MenuItem key={client._id} value={client._id}>
                         {client.name}
@@ -1328,7 +1320,7 @@ const E_Ticket = () => {
                     ))}
                 </TextField>
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   fullWidth
                   required
@@ -1341,7 +1333,7 @@ const E_Ticket = () => {
                   disabled={lockAllFields}
                 />
               </Grid>
-              <Grid item>
+              <Grid>
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   Attachments
                 </Typography>
@@ -1361,7 +1353,7 @@ const E_Ticket = () => {
                 )}
               </Grid>
 
-              <Grid item>
+              <Grid>
                 <Box mt={2} display="flex" gap={2}>
                   <Button
                     type="submit"
@@ -1617,7 +1609,7 @@ const E_Ticket = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      onClick={() => setConfirmOpen(false)}
+                      onClick={() => { setConfirmOpen(false); setIsTargetDatePresent(false) }}
                     >
                       Cancel
                     </Button>

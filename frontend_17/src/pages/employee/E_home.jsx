@@ -54,7 +54,7 @@ export default function E_home() {
     
           // Count normal statuses
           const status = t.mainStatus;
-          if (status && status !== "handover" && stats[status] !== undefined) {
+          if (status && status != "handover" && stats[status] !== undefined) {
             stats[status]++;
           }
     
