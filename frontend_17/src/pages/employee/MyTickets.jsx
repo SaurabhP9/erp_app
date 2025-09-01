@@ -1222,7 +1222,7 @@ const E_Ticket = () => {
                   fullWidth
                   required={!formData.targetDate}
                   type="date"
-                  label="Target Date"
+                  
                   name="targetDate"
                   value={formData.targetDate || ""}
                   onChange={handleChange}
@@ -1303,10 +1303,10 @@ const E_Ticket = () => {
                   select
                   fullWidth
                   required
-                  label={formData.mainStatus?.toLowerCase() === "handover" ? "Assign To Client" : "Assign To Employee"}
-                  name={formData.mainStatus?.toLowerCase() === "handover" ? "clientId" : "employeeId"}
+                  label={formData.mainStatus?.toLowerCase() == "handover" ? "Assign To Client" : "Assign To Employee"}
+                  name={formData.mainStatus?.toLowerCase() == "handover" ? "clientId" : "employeeId"}
                   value={
-                    formData.mainStatus === "handover"
+                    formData.mainStatus == "handover"
                       ? clients.find((c) => c._id === formData.clientId)?._id || ""
                       : employees.find((e) => e._id === formData.employeeId)?._id || ""
                   }
@@ -1315,7 +1315,7 @@ const E_Ticket = () => {
                 >
                   <MenuItem value="">Select</MenuItem>
 
-                  {formData.mainStatus === "handover"
+                  {formData.mainStatus?.toLocaleLowerCase() == "handover"
                     ? clients.map((client) => (
                       <MenuItem key={client._id} value={client._id}>
                         {client.name}
@@ -1453,7 +1453,7 @@ const E_Ticket = () => {
                   ["Category", viewTicket.category],
                   ["Submitted", formatToIST(viewTicket.createdTime)],
                   [
-                    "Target Date",
+                    "",
                     viewTicket.targetDate
                       ? dayjs(viewTicket.targetDate).format("DD MMM YYYY")
                       : "—",
