@@ -387,7 +387,20 @@ const E_Ticket = () => {
   //   }
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, files } = e.target;
+
+    if (name == "attachments") {
+      const newFiles = Array.from(files);
+
+      setFormData((prev) => ({
+        ...prev,
+        attachments: [
+          ...(prev.attachments || []),
+          ...newFiles,
+        ],
+      }));
+      return;
+    }
 
     if (name === "employeeId") {
       const selectedEmployee = employees.find((emp) => emp._id === value);
@@ -473,7 +486,7 @@ const E_Ticket = () => {
         });
 
         setIsTargetDatePresent(!!originalTicket.targetDate);
-      
+
         createdOrUpdated = await updateTicket(editId, form);
 
         setTickets((prev) =>
@@ -682,12 +695,12 @@ const E_Ticket = () => {
       mainStatus: ticket.mainStatus,
       employeeId: ticket.employeeId,
       employee: selectedEmployee?.name || "",
-      clientId: ticket.clientId || "",   
+      clientId: ticket.clientId || "",
       attachments: [],
       targetDate: dayjs(ticket.targetDate) || "",
     });
 
-    setIsTargetDatePresent(!!ticket.targetDate); 
+    setIsTargetDatePresent(!!ticket.targetDate);
     setOriginalMainStatus((ticket.mainStatus || "").toLowerCase());
     setEditMode(true);
     setEditId(ticket._id);
@@ -1260,9 +1273,9 @@ const E_Ticket = () => {
                   onChange={(newValue) => {
                     setFormData((prev) => ({
                       ...prev,
-                      targetDate: newValue || null,  
+                      targetDate: newValue || null,
                     }));
-                  }}                  
+                  }}
                   disablePast
                   slotProps={{
                     textField: {
@@ -1394,9 +1407,9 @@ const E_Ticket = () => {
                   onChange={handleChange}
                   disabled={lockAllFields}
                 />
-                {formData.attachments.length > 0 && (
+                {formData.attachments?.length > 0 && (
                   <List>
-                    {formData.attachments.map((file, i) => (
+                    {formData.attachments?.map((file, i) => (
                       <ListItem key={i}>{file.name}</ListItem>
                     ))}
                   </List>
@@ -1526,20 +1539,15 @@ const E_Ticket = () => {
                 <Typography variant="subtitle1" fontWeight="bold" mb={1}>
                   📎 Attachments
                 </Typography>
-                {viewTicket.attachments?.length > 0 ? (
+                {Array.isArray(viewTicket.attachments) && viewTicket.attachments.length > 0 ? (
                   viewTicket.attachments.map((file, i) => (
                     <Box
                       key={i}
                       sx={{ display: "flex", alignItems: "center", mb: 0.5 }}
                     >
                       {/* File link */}
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ marginRight: "8px" }}
-                      >
-                        📄 {file.filename}
+                      <a href={file.url} target="_blank" rel="noopener noreferrer">
+                        {file.filename || `Attachment ${i + 1}`}
                       </a>
 
                       {/* Delete Icon */}

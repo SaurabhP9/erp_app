@@ -76,14 +76,17 @@ const ticketSchema = new mongoose.Schema({
       reassignedAt: { type: Date, default: Date.now },
     },
   ],
-  attachments: [
-    {
-      filename: { type: String },   // original file name
-      url: { type: String },        // Cloudinary URL
-      public_id: { type: String },  // Cloudinary public_id
-      mimetype: { type: String },
-    },
-  ],
+  attachments: {
+    type: [
+      {
+        filename: String,   // original file name
+        url: String,        // Cloudinary URL
+        public_id: String,  // Cloudinary public_id
+        mimetype: String,
+      },
+    ],
+    default: [], // ✅ ensures attachments is always an array
+  },  
   mainStatus: {
     type: String
   },
