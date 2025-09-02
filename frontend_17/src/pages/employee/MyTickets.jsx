@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
 import {
   Container,
   Typography,
@@ -276,7 +280,7 @@ const E_Ticket = () => {
         ? combined.filter((t) => t.mainStatus == statusQuery)
         : combined;
 
-        setTickets(filtered);
+      setTickets(filtered);
       setProjects(proj);
       setDepartments(dept); // Fixed: setDepartments is now defined
       setCategories(cat);
@@ -469,9 +473,9 @@ const E_Ticket = () => {
         });
 
         setIsTargetDatePresent(!!originalTicket.targetDate);
-        console.log(form);
+      
         createdOrUpdated = await updateTicket(editId, form);
-        console.log(createdOrUpdated);
+
         setTickets((prev) =>
           prev.map((t) =>
             t._id === editId
@@ -678,12 +682,12 @@ const E_Ticket = () => {
       mainStatus: ticket.mainStatus,
       employeeId: ticket.employeeId,
       employee: selectedEmployee?.name || "",
-      clientId: ticket.clientId || "",   // ✅ include clientId
+      clientId: ticket.clientId || "",   
       attachments: [],
-      targetDate: ticket.targetDate || "",
+      targetDate: dayjs(ticket.targetDate) || "",
     });
 
-    setIsTargetDatePresent(!!ticket.targetDate); // ✅ disable field if present
+    setIsTargetDatePresent(!!ticket.targetDate); 
     setOriginalMainStatus((ticket.mainStatus || "").toLowerCase());
     setEditMode(true);
     setEditId(ticket._id);
@@ -1231,7 +1235,7 @@ const E_Ticket = () => {
                 </TextField>
               </Grid>
 
-              <TextField
+              {/* <TextField
                 margin="dense"
                 type="date"
                 fullWidth
@@ -1239,14 +1243,36 @@ const E_Ticket = () => {
                 required={!formData.targetDate}
                 value={
                   formData.targetDate
-                    ? dayjs(formData.targetDate).format("YYYY-MM-DD")
+                    ? dayjs(formData.targetDate, ["DD-MM-YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD")
                     : ""
                 }
-                onChange={(e) =>
-                  setFormData({ ...formData, targetDate: e.target.value })
-                }
+                onChange={handleChange}
                 disabled={isTargetDatePresent}
-              />
+              /> */}
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Target Date"
+                  value={
+                    formData.targetDate
+                      ? dayjs(formData.targetDate, ["DD-MM-YYYY", "YYYY-MM-DD"])
+                      : null
+                  }
+                  onChange={(newValue) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      targetDate: newValue || null,  
+                    }));
+                  }}                  
+                  disablePast
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: !formData.targetDate,
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+
 
               <Grid>
                 <TextField
