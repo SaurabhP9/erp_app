@@ -23,6 +23,10 @@ const ticketSchema = new mongoose.Schema({
     type: String, // Assigned to (client _id)
     default: null,
   },
+  client: {
+    type: String,
+    default: null,
+  },
   project: {
     type: String,
     required: true,

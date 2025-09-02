@@ -275,8 +275,8 @@ const E_Ticket = () => {
       const filtered = statusQuery
         ? combined.filter((t) => t.mainStatus == statusQuery)
         : combined;
-      console.log(filtered);
-      setTickets(filtered);
+
+        setTickets(filtered);
       setProjects(proj);
       setDepartments(dept); // Fixed: setDepartments is now defined
       setCategories(cat);
@@ -385,7 +385,7 @@ const E_Ticket = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name == "employeeId") {
+    if (name === "employeeId") {
       const selectedEmployee = employees.find((emp) => emp._id === value);
       setFormData((prev) => ({
         ...prev,
@@ -395,12 +395,42 @@ const E_Ticket = () => {
       return;
     }
 
-    if (name == "clientId") {
+    if (name === "clientId") {
       const selectedClient = clients.find((c) => c._id === value);
       setFormData((prev) => ({
         ...prev,
         clientId: value,
         client: selectedClient?.name || "",
+      }));
+      return;
+    }
+
+    if (name === "projectId") {
+      const selectedProject = projects.find((p) => p._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        projectId: value,
+        project: selectedProject?.project || "",
+      }));
+      return;
+    }
+
+    if (name === "categoryId") {
+      const selectedCategory = categories.find((c) => c._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        categoryId: value,
+        category: selectedCategory?.category || "",
+      }));
+      return;
+    }
+
+    if (name === "priorityId") {
+      const selectedPriority = priorities.find((p) => p._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        priorityId: value,
+        priority: selectedPriority?.priority || "",
       }));
       return;
     }
@@ -637,7 +667,7 @@ const E_Ticket = () => {
       name: ticket.name,
       subject: ticket.subject,
       projectId: ticket.projectId,
-      project: selectedProject?._id || "",
+      project: selectedProject?.project || "",
       departmentId: ticket.departmentId,
       department: ticket.department,
       categoryId: ticket.categoryId,
@@ -1187,16 +1217,14 @@ const E_Ticket = () => {
                   fullWidth
                   required
                   label="Project"
-                  name="project"
-                  value={
-                    projects.find((p) => p._id === formData.projectId) || ""
-                  }
+                  name="projectId"
+                  value={formData.projectId || ""}
                   onChange={handleChange}
                   disabled={lockAllFields}
                 >
                   <MenuItem value="">Select</MenuItem>
                   {projects.map((proj) => (
-                    <MenuItem key={proj._id} value={proj}>
+                    <MenuItem key={proj._id} value={proj._id}>
                       {proj.project}
                     </MenuItem>
                   ))}
@@ -1226,16 +1254,14 @@ const E_Ticket = () => {
                   fullWidth
                   required
                   label="Category"
-                  name="category"
-                  value={
-                    categories.find((c) => c._id === formData.categoryId) || ""
-                  }
+                  name="categoryId"
+                  value={formData.categoryId || ""}
                   onChange={handleChange}
                   disabled={lockAllFields}
                 >
                   <MenuItem value="">Select</MenuItem>
                   {categories.map((cat) => (
-                    <MenuItem key={cat._id} value={cat}>
+                    <MenuItem key={cat._id} value={cat._id}>
                       {cat.category}
                     </MenuItem>
                   ))}
@@ -1247,20 +1273,18 @@ const E_Ticket = () => {
                   fullWidth
                   required
                   label="Priority"
-                  name="priority"
-                  value={
-                    priorities.find((p) => p._id === formData.priorityId) || ""
-                  }
+                  name="priorityId"
+                  value={formData.priorityId || ""}
                   onChange={handleChange}
-                  disabled={lockAllFields}
                 >
                   <MenuItem value="">Select</MenuItem>
                   {priorities.map((pri) => (
-                    <MenuItem key={pri._id} value={pri}>
+                    <MenuItem key={pri._id} value={pri._id}>
                       {pri.priority}
                     </MenuItem>
                   ))}
                 </TextField>
+
               </Grid>
               <Grid>
                 <TextField
