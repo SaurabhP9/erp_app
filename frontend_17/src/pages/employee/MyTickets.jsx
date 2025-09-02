@@ -276,9 +276,33 @@ const E_Ticket = () => {
         ...created.filter((ct) => !assigned.some((at) => at._id === ct._id)),
       ];
 
-      const filtered = statusQuery
-        ? combined.filter((t) => t.mainStatus == statusQuery)
-        : combined;
+      const normalize = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+      let filtered = combined;
+      if (statusQuery) {
+        const q = normalize(statusQuery);
+
+        if (q === "today") {
+          const today = dayjs().format("YYYY-MM-DD");
+          filtered = combined.filter(
+            (t) =>
+              t.createdTime &&
+              dayjs(t.createdTime).format("YYYY-MM-DD") == today
+          );
+        } else if (q === "assigned") {
+          filtered = combined.filter((t) => t.employeeId === userId);
+        } else if (q === "total") {
+          filtered = combined;
+        } else if (q === "handover") {
+          filtered = combined.filter(
+            (t) =>
+              Array.isArray(t.handoverHistory) &&
+              t.handoverHistory.some((h) => String(h.fromEmployeeId) === userId)
+          );
+        } else {
+          filtered = combined.filter((t) => normalize(t.mainStatus) === q);
+        }
+      }
 
       setTickets(filtered);
       setProjects(proj);

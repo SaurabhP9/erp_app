@@ -11,7 +11,8 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { getTicketsByEmployeeId } from "../../api/ticketApi";
+import dayjs from "dayjs";
+import { getTicketsByEmployeeId, getTicketsByUserId } from "../../api/ticketApi";
 import { useNavigate } from "react-router-dom";
 
 export default function E_home() {
@@ -20,10 +21,13 @@ export default function E_home() {
 
   const statusMap = {
     "Open Ticket": "open",
-    "In Process Ticket": "inProcess",
+    "In Process Ticket": "inprocess",
     "Closed Ticket": "closed",
     "Handover to Customer": "handover",
-  };
+    "Total Ticket": "total",
+    "Today's Ticket": "today",
+    "Assigned Ticket": "assigned",
+  };  
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -31,33 +35,43 @@ export default function E_home() {
 
     const fetchTickets = async () => {
       try {
-        const tickets = await getTicketsByEmployeeId(userId);
-        
+        const ticketsAssign = await getTicketsByEmployeeId(userId);
+        const createdTickets = await getTicketsByUserId(userId);
+
+        const tickets = [
+          ...ticketsAssign,
+          ...createdTickets.filter(
+            (ct) => !ticketsAssign.some((at) => at._id === ct._id)
+          ),
+        ];
         const stats = {
           total: tickets.length,
           today: 0,
           assigned: 0,
           open: 0,
-          inProcess: 0,
+          inprocess: 0, 
           closed: 0,
           handover: 0,  // will now be based on handoverHistory
           working: 0,
         };
-    
-        const todayStr = new Date().toISOString().split("T")[0];
-    
+
+        const todayStr = dayjs().format("YYYY-MM-DD");
+
         tickets.forEach((t) => {
-          const created = t.createdTime?.split("T")[0];
+          const created = t.createdTime ? dayjs(t.createdTime).format("YYYY-MM-DD") : null;
           if (created === todayStr) stats.today++;
-    
+
           if (t.employeeId) stats.assigned++;
-    
+
           // Count normal statuses
-          const status = t.mainStatus;
-          if (status && status != "handover" && stats[status] !== undefined) {
+          const normalize = (s) =>
+  String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          const status = normalize(t.mainStatus);
+          if (status && status != "handover" && stats[status] != undefined) {
+            console.log(status);
             stats[status]++;
           }
-    
+
           if (
             Array.isArray(t.handoverHistory) &&
             t.handoverHistory.some(
@@ -66,14 +80,14 @@ export default function E_home() {
           ) {
             stats.handover++;
           }
-          
+
         });
-    
+
         setTicketStats(stats);
       } catch (err) {
         console.error("Failed to load user tickets", err);
       }
-    };    
+    };
 
     fetchTickets();
   }, []);
@@ -84,7 +98,7 @@ export default function E_home() {
     { id: 1, label: "Total Ticket", total: ticketStats.total },
     { id: 2, label: "Today's Ticket", total: ticketStats.today },
     { id: 3, label: "Open Ticket", total: ticketStats.open },
-    { id: 4, label: "In Process Ticket", total: ticketStats.inProcess },
+    { id: 4, label: "In Process Ticket", total: ticketStats.inprocess },
     { id: 5, label: "Closed Ticket", total: ticketStats.closed },
     { id: 6, label: "Handover to Customer", total: ticketStats.handover },
     { id: 7, label: "Assigned Ticket", total: ticketStats.assigned },
