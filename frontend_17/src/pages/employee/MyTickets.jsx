@@ -532,19 +532,15 @@ const E_Ticket = () => {
         // ✅ Add all fields to FormData
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
-            const existing = value.filter((file) => typeof file === "string"); // old files
-            const newFiles = value.filter((file) => file instanceof File); // new uploads
             const existing = value.filter((file) => typeof file === "string");
             const newFiles = value.filter((file) => file instanceof File);
-
-            if (existing.length > 0) {
-              form.append("existingAttachments", JSON.stringify(existing));
-            }
+    
+            if (existing.length) form.append("existingAttachments", JSON.stringify(existing));
             newFiles.forEach((file) => form.append("attachments", file));
           } else {
             form.append(key, value ?? "");
           }
-        });
+        });    
 
         // API call to update
         createdOrUpdated = await updateTicket(editId, form);
