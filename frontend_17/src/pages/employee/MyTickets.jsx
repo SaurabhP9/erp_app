@@ -96,7 +96,7 @@ const initialFormData = {
   mainStatus: "",
   attachments: [],
   targetDate: "",
-  clientId: ""
+  clientId: "",
 };
 
 const E_Ticket = () => {
@@ -157,7 +157,6 @@ const E_Ticket = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // New: State for Snackbar severity
   const [clients, setClients] = useState([]);
   const [isTargetDatePresent, setIsTargetDatePresent] = useState(false);
-
 
   const cellStyle = {
     border: "1px solid #ccc",
@@ -256,18 +255,27 @@ const E_Ticket = () => {
     try {
       const userId = localStorage.getItem("userId");
       const departmentUser = localStorage.getItem("department");
-      const [ticketData, proj, dept, cat, prio, users, emp, statusList, clients] =
-        await Promise.all([
-          getAllTickets(),
-          getAllProjects(),
-          getAllDepartments(),
-          getAllCategories(),
-          getAllPriorities(),
-          getAllUsers(),
-          getAllUsersByRole("employee"),
-          getAllStatuses(),
-          getAllUsersByRole("client"),
-        ]);
+      const [
+        ticketData,
+        proj,
+        dept,
+        cat,
+        prio,
+        users,
+        emp,
+        statusList,
+        clients,
+      ] = await Promise.all([
+        getAllTickets(),
+        getAllProjects(),
+        getAllDepartments(),
+        getAllCategories(),
+        getAllPriorities(),
+        getAllUsers(),
+        getAllUsersByRole("employee"),
+        getAllStatuses(),
+        getAllUsersByRole("client"),
+      ]);
 
       const assigned = ticketData.filter((t) => t.employeeId === userId);
       const created = ticketData.filter((t) => t.userId === userId);
@@ -276,7 +284,10 @@ const E_Ticket = () => {
         ...created.filter((ct) => !assigned.some((at) => at._id === ct._id)),
       ];
 
-      const normalize = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const normalize = (s) =>
+        String(s || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
 
       let filtered = combined;
       if (statusQuery) {
@@ -315,7 +326,7 @@ const E_Ticket = () => {
       setUsers(users);
       setClients(clients);
       setStatus(statusList);
-      setFunctional(departmentUser.toLocaleLowerCase() == "functional")
+      setFunctional(departmentUser.toLocaleLowerCase() == "functional");
     } catch (err) {
       console.error("Error loading data:", err);
     }
@@ -418,10 +429,7 @@ const E_Ticket = () => {
 
       setFormData((prev) => ({
         ...prev,
-        attachments: [
-          ...(prev.attachments || []),
-          ...newFiles,
-        ],
+        attachments: [...(prev.attachments || []), ...newFiles],
       }));
       return;
     }
@@ -482,7 +490,6 @@ const E_Ticket = () => {
     }));
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -525,6 +532,8 @@ const E_Ticket = () => {
         // ✅ Add all fields to FormData
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
+            const existing = value.filter((file) => typeof file === "string"); // old files
+            const newFiles = value.filter((file) => file instanceof File); // new uploads
             const existing = value.filter((file) => typeof file === "string");
             const newFiles = value.filter((file) => file instanceof File);
 
@@ -589,6 +598,7 @@ const E_Ticket = () => {
       setSnackbarOpen(true);
     } finally {
       setIsSubmitting(false);
+      setIsTargetDatePresent(false);
       setIsTargetDatePresent(false);
     }
 
@@ -682,32 +692,41 @@ const E_Ticket = () => {
     const htmlContent = `
         <div style="background-color: #fdf8e4; padding: 40px 0;">
           <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-            <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
-      },</p>
+            <p style="font-size: 16px;">Dear ${
+              assignedEmployee?.name || "Team"
+            },</p>
 
             <p style="font-size: 15px;">
-              ${isEdit
-        ? "The following ticket has been updated"
-        : "A new ticket has been assigned to you"
-      }. Please review the details below and take appropriate action.
+              ${
+                isEdit
+                  ? "The following ticket has been updated"
+                  : "A new ticket has been assigned to you"
+              }. Please review the details below and take appropriate action.
             </p>
 
             <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
             <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
-      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.name
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.subject
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.project
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.category
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.priority
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.issue
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.mainStatus || "Open"
+              }</td></tr>
             </table>
 
             <div style="margin-top: 30px; text-align: center;">
@@ -728,16 +747,21 @@ const E_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
-        }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
+        createdOrUpdated.name
+      }`,
       html: htmlContent,
     });
   }
 
   const handleEdit = (ticket) => {
     const selectedProject = projects.find((p) => p._id === ticket.projectId);
-    const selectedCategory = categories.find((c) => c._id === ticket.categoryId);
-    const selectedPriority = priorities.find((p) => p._id === ticket.priorityId);
+    const selectedCategory = categories.find(
+      (c) => c._id === ticket.categoryId
+    );
+    const selectedPriority = priorities.find(
+      (p) => p._id === ticket.priorityId
+    );
     const selectedEmployee = employees.find((e) => e._id === ticket.employeeId);
 
     setFormData({
@@ -1103,20 +1127,20 @@ const E_Ticket = () => {
                               idx === 0
                                 ? "5px"
                                 : idx === 1
-                                  ? "10px"
-                                  : idx === 2
-                                    ? "20px"
-                                    : idx === 3
-                                      ? "20px"
-                                      : idx === 4
-                                        ? "40px"
-                                        : idx === 5 || idx === 6 // ✅ Submitted Time & Target Date same width
-                                          ? "25px"
-                                          : idx === 7 || idx === 8 || idx === 9
-                                            ? "25px"
-                                            : idx === 10
-                                              ? "15px"
-                                              : "auto",
+                                ? "10px"
+                                : idx === 2
+                                ? "20px"
+                                : idx === 3
+                                ? "20px"
+                                : idx === 4
+                                ? "40px"
+                                : idx === 5 || idx === 6 // ✅ Submitted Time & Target Date same width
+                                ? "25px"
+                                : idx === 7 || idx === 8 || idx === 9
+                                ? "25px"
+                                : idx === 10
+                                ? "15px"
+                                : "auto",
                           }}
                         >
                           {label}
@@ -1213,7 +1237,9 @@ const E_Ticket = () => {
                             <Chip
                               label={
                                 statusMap[ticket.mainStatus?.toLowerCase()]
-                                  ? statusMap[ticket.mainStatus?.toLowerCase()].join(", ")
+                                  ? statusMap[
+                                      ticket.mainStatus?.toLowerCase()
+                                    ].join(", ")
                                   : "—"
                               }
                               size="small"
@@ -1326,9 +1352,10 @@ const E_Ticket = () => {
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="Target Date"
+                  format="DD/MM/YYYY" // 👈 Force input/output format
                   value={
                     formData.targetDate
-                      ? dayjs(formData.targetDate, ["DD-MM-YYYY", "YYYY-MM-DD"])
+                      ? dayjs(formData.targetDate, ["DD/MM/YYYY", "YYYY-MM-DD"])
                       : null
                   }
                   onChange={(newValue) => {
@@ -1346,7 +1373,6 @@ const E_Ticket = () => {
                   }}
                 />
               </LocalizationProvider>
-
 
               <Grid>
                 <TextField
@@ -1384,7 +1410,6 @@ const E_Ticket = () => {
                     </MenuItem>
                   ))}
                 </TextField>
-
               </Grid>
               <Grid>
                 <TextField
@@ -1396,7 +1421,10 @@ const E_Ticket = () => {
                   value={formData.mainStatus}
                   onChange={handleChange}
                   disabled={
-                    lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)
+                    lockAllFields ||
+                    (editMode &&
+                      isUpdated &&
+                      formData.employeeId !== currentUserId)
                   }
                 >
                   <MenuItem value="">Select</MenuItem>
@@ -1422,7 +1450,11 @@ const E_Ticket = () => {
                       ? "Assign To Client"
                       : "Assign To Employee"
                   }
-                  name={formData.mainStatus?.toLowerCase() === "handover" ? "clientId" : "employeeId"}
+                  name={
+                    formData.mainStatus?.toLowerCase() === "handover"
+                      ? "clientId"
+                      : "employeeId"
+                  }
                   value={
                     formData.mainStatus?.toLowerCase() === "handover"
                       ? formData.clientId || ""
@@ -1433,15 +1465,15 @@ const E_Ticket = () => {
                   <MenuItem value="">Select</MenuItem>
                   {formData.mainStatus?.toLowerCase() === "handover"
                     ? clients.map((client) => (
-                      <MenuItem key={client._id} value={client._id}>
-                        {client.name}
-                      </MenuItem>
-                    ))
+                        <MenuItem key={client._id} value={client._id}>
+                          {client.name}
+                        </MenuItem>
+                      ))
                     : employees.map((emp) => (
-                      <MenuItem key={emp._id} value={emp._id}>
-                        {emp.name}
-                      </MenuItem>
-                    ))}
+                        <MenuItem key={emp._id} value={emp._id}>
+                          {emp.name}
+                        </MenuItem>
+                      ))}
                 </TextField>
               </Grid>
               <Grid>
@@ -1492,8 +1524,8 @@ const E_Ticket = () => {
                         ? "Updating..."
                         : "Creating..."
                       : editMode
-                        ? "Update"
-                        : "Submit"}
+                      ? "Update"
+                      : "Submit"}
                   </Button>
                   <Button variant="outlined" onClick={() => setShowForm(false)}>
                     Back
@@ -1600,14 +1632,19 @@ const E_Ticket = () => {
                 <Typography variant="subtitle1" fontWeight="bold" mb={1}>
                   📎 Attachments
                 </Typography>
-                {Array.isArray(viewTicket.attachments) && viewTicket.attachments.length > 0 ? (
+                {Array.isArray(viewTicket.attachments) &&
+                viewTicket.attachments.length > 0 ? (
                   viewTicket.attachments.map((file, i) => (
                     <Box
                       key={i}
                       sx={{ display: "flex", alignItems: "center", mb: 0.5 }}
                     >
                       {/* File link */}
-                      <a href={file.url} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         {file.filename || `Attachment ${i + 1}`}
                       </a>
 
@@ -1618,7 +1655,10 @@ const E_Ticket = () => {
                           size="small"
                           onClick={async () => {
                             try {
-                              const updatedTicket = await deleteAttachment(viewTicket._id, file.public_id);
+                              const updatedTicket = await deleteAttachment(
+                                viewTicket._id,
+                                file.public_id
+                              );
 
                               setViewTicket(updatedTicket);
                               setTickets((prev) =>
@@ -1627,12 +1667,16 @@ const E_Ticket = () => {
                                 )
                               );
 
-                              setSnackbarMessage("Attachment deleted successfully!");
+                              setSnackbarMessage(
+                                "Attachment deleted successfully!"
+                              );
                               setSnackbarSeverity("success");
                               setSnackbarOpen(true);
                             } catch (err) {
                               console.error("Attachment delete failed:", err);
-                              setSnackbarMessage("Failed to delete attachment.");
+                              setSnackbarMessage(
+                                "Failed to delete attachment."
+                              );
                               setSnackbarSeverity("error");
                               setSnackbarOpen(true);
                             }
@@ -1728,7 +1772,10 @@ const E_Ticket = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      onClick={() => { setConfirmOpen(false); setIsTargetDatePresent(false) }}
+                      onClick={() => {
+                        setConfirmOpen(false);
+                        setIsTargetDatePresent(false);
+                      }}
                     >
                       Cancel
                     </Button>
