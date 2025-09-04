@@ -178,7 +178,7 @@ export default function Home() {
                             sx={{ ...cellStyle, ...orangeText }}
                             onClick={() =>
                               navigate(
-                                `/ticket?employeeId=${emp.employeeId}&status=${key}`
+                                `/ticket?employeeId=${emp.employeeId}&status=${key.toLowerCase()}`
                               )
                             }
                           >
@@ -223,7 +223,7 @@ export default function Home() {
                               sx={{ ...cellStyle, ...orangeText }}
                               onClick={() =>
                                 navigate(
-                                  `/ticket?userId=${user.userId}&status=${key}`
+                                  `/ticket?userId=${user.userId}&status=${key.toLowerCase()}`
                                 )
                               }
                             >

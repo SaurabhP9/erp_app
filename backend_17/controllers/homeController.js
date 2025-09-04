@@ -1,12 +1,8 @@
 const { User, Employee, Ticket } = require("../models");
 const dayjs = require("dayjs");
 
-
 exports.getHomeSummary = async (req, res) => {
   try {
-    /** -------------------------------
-     * 1. Ticket Summary (Overall)
-     * -------------------------------- */
     const ticketSummaryData = await Ticket.aggregate([
       {
         $group: {
@@ -33,71 +29,68 @@ exports.getHomeSummary = async (req, res) => {
       ticketSummary.total += t.count;
     });
 
-    /** -------------------------------
-     * 2. Employee Summary
-     *    - Count tickets where:
-     *      employeeId == emp._id OR userId == emp._id
-     *    - Ensure no duplicate counting if both match
-     * -------------------------------- */
-    const employeeSummary = await Ticket.aggregate([
-      {
-        $match: {
-          $or: [
-            { employeeId: { $exists: true, $ne: null } },
-            { userId: { $exists: true, $ne: null } },
-          ],
-        },
-      },
-      {
-        // Group by employee, but avoid duplicates
-        $group: {
-          _id: "$mainStatus",
-          ticketsByEmployee: {
-            $addToSet: {
-              employeeId: "$employeeId",
-              userId: "$userId",
-              ticketId: "$_id",
-              mainStatus: "$mainStatus",
-            },
-          },
-        },
-      },
-    ]);
-
-    // Fetch all employees
     const employees = await User.find({ role: "employee" }).lean();
-    const employeeMap = employees.reduce((acc, emp) => {
-      acc[emp._id.toString()] = {
-        employeeId: emp._id,
-        name: emp.name,
-        email: emp.email,
-        ticketStatus: { open: 0, closed: 0, handover: 0, inProcess: 0 },
-      };
-      return acc;
-    }, {});
 
-    // Merge tickets per employee without duplicates
-    employeeSummary.forEach((statusGroup) => {
-      const status = statusGroup._id.toLowerCase();
+    const employeeSummary = await Promise.all(
+      employees.map(async (emp) => {
+        const tickets = await Ticket.find({
+          $or: [{ employeeId: emp._id }, { userId: emp._id }],
+        }).lean();
 
-      statusGroup.ticketsByEmployee.forEach((ticket) => {
-        // The employee ID to which this ticket belongs
-        const empId = ticket.employeeId?.toString() || ticket.userId?.toString();
+        const todayStr = dayjs().format("YYYY-MM-DD");
+        const stats = {
+          open: 0,
+          todayOpen: 0,
+          inProcess: 0,
+          closed: 0,
+          handover: 0,
+        };
 
-        if (!empId || !employeeMap[empId]) return;
+        const uniqueTicketIds = new Set();
+        tickets.forEach((t) => {
+          const ticketId = t._id.toString();
+          if (uniqueTicketIds.has(ticketId)) return;
+          uniqueTicketIds.add(ticketId);
 
-        const ticketStatus = employeeMap[empId].ticketStatus;
+          const status = (t.mainStatus || "").toLowerCase();
 
-        if (status === "open") ticketStatus.open += 1;
-        if (status === "closed") ticketStatus.closed += 1;
-        if (status === "handover") ticketStatus.handover += 1;
-        if (status === "inprocess") ticketStatus.inProcess += 1;
-      });
-    });
+          if (status === "open") {
+            stats.open++;
+            const createdDate = t.createdTime
+              ? dayjs(t.createdTime).format("YYYY-MM-DD")
+              : null;
+            if (createdDate === todayStr) stats.todayOpen++;
+          } else if (status === "inprocess") {
+            stats.inProcess++;
+          } else if (status === "closed") {
+            stats.closed++;
+          }
 
-    /** -------------------------------
-     * 3. User Summary (Non-employees)
-     * -------------------------------- */
+          if (
+            Array.isArray(t.handoverHistory) &&
+            t.handoverHistory.some(
+              (h) => h.fromEmployeeId?.toString() === emp._id.toString()
+            )
+          ) {
+            stats.handover++;
+          }
+        });
+
+        return {
+          employeeId: emp._id,
+          name: emp.name,
+          email: emp.email,
+          ticketStatus: {
+            open: stats.open + stats.todayOpen,
+            inProcess: stats.inProcess,
+            closed: stats.closed,
+            handover: stats.handover,
+          },
+        };
+      })
+    );
+
+
     const userSummary = await Ticket.aggregate([
       {
         $group: {
@@ -133,7 +126,7 @@ exports.getHomeSummary = async (req, res) => {
 
     res.json({
       ticketSummary,
-      employeeSummary: Object.values(employeeMap),
+      employeeSummary,
       userSummary: Object.values(userMap),
     });
   } catch (err) {
@@ -167,7 +160,7 @@ exports.getTicketSummaryByRole = async (req, res) => {
           open: userTickets.filter((t) => t.mainStatus == "open").length,
           closed: userTickets.filter((t) => t.mainStatus == "closed").length,
           handover: handoverCount,
-          inProgress: userTickets.filter((t) => t.mainStatus == "inProcess").length
+          inProgress: userTickets.filter((t) => t.mainStatus == "inProcess").length,
         };
 
         return {
@@ -198,8 +191,8 @@ exports.getEmployeeTicketSummary = async (req, res) => {
     // Fetch only relevant tickets directly from DB
     const tickets = await Ticket.find({
       $or: [
-        { employeeId }, // Tickets assigned to the employee
-        { userId: employeeId }, // Tickets created by the employee
+        { employeeId },
+        { userId: employeeId },
       ],
     }).lean();
 
@@ -221,22 +214,19 @@ exports.getEmployeeTicketSummary = async (req, res) => {
 
     tickets.forEach((t) => {
       const ticketId = t._id.toString();
-      if (uniqueTicketIds.has(ticketId)) return; // Skip duplicates
+      if (uniqueTicketIds.has(ticketId)) return;
       uniqueTicketIds.add(ticketId);
 
       stats.total++;
 
       /** ---------- Today's Tickets ---------- */
-      const createdDate = t.createdTime ? dayjs(t.createdTime).format("YYYY-MM-DD") : null;
+      const createdDate = t.createdTime
+        ? dayjs(t.createdTime).format("YYYY-MM-DD")
+        : null;
       if (createdDate === todayStr) stats.today++;
 
       /** ---------- Assigned Tickets ---------- */
-      // Assigned tickets
-      // ✅ Only count if employeeId and userId are NOT the same
-      if (
-        t.employeeId?.toString() === employeeId &&
-        t.userId?.toString() !== employeeId
-      ) {
+      if (t.employeeId?.toString() === employeeId && t.userId?.toString() !== employeeId) {
         stats.assigned++;
       }
 
@@ -247,10 +237,8 @@ exports.getEmployeeTicketSummary = async (req, res) => {
       else if (status === "closed") stats.closed++;
 
       /** ---------- Handover Count ---------- */
-      if (
-        Array.isArray(t.handoverHistory) &&
-        t.handoverHistory.some(h => h.fromEmployeeId?.toString() === employeeId)
-      ) {
+      if (Array.isArray(t.handoverHistory) && t.handoverHistory.some(
+          (h) => h.fromEmployeeId?.toString() === employeeId)) {
         stats.handover++;
       }
     });
@@ -272,4 +260,3 @@ exports.getEmployeeTicketSummary = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch ticket summary" });
   }
 };
-

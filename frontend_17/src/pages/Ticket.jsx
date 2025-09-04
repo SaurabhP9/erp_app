@@ -252,12 +252,17 @@ const Ticket = () => {
       ]);
 
       const filtered = ticketData.filter((t) => {
-        return (
-          (!userIdQuery || t.userId === userIdQuery) &&
-          (!employeeIdQuery || t.employeeId === employeeIdQuery) &&
-          (!statusQuery || t.mainStatus === statusQuery)
-        );
+        const statusMatch = !statusQuery || t.mainStatus?.toLowerCase().includes(statusQuery);
+  
+        const employeeMatch = !employeeIdQuery || t.userId == employeeIdQuery || t.employeeId == employeeIdQuery;
+      
+        const clientMatch = !userIdQuery || t.userId == userIdQuery;
+      
+        return statusMatch && (employeeIdQuery ? employeeMatch : clientMatch);
       });
+      
+      console.log("empId", employeeIdQuery, "statusQuery", statusQuery)
+      console.log(filtered);
 
       const emp = users.filter((u) => u.role === "employee");
       setTickets(filtered);
@@ -748,38 +753,25 @@ const Ticket = () => {
     return map;
   }, [status]);
 
-  const filteredTickets = tickets
-    .filter((ticket) => {
-      const matchUser = !userIdQuery || ticket.userId === userIdQuery;
-      const matchEmployee =
-        !employeeIdQuery || ticket.employeeId === employeeIdQuery;
-      const matchStatus = !statusQuery || ticket.mainStatus === statusQuery;
-      return matchUser && matchEmployee && matchStatus;
-    })
-    .filter(applyFilters)
-    .filter((ticket) =>
-      Object.values(ticket).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+  const filteredTickets = tickets.filter((t) => {
+    const statusMatch = !statusQuery || t.mainStatus?.toLowerCase().includes(statusQuery);
+  
+    // For employee view: match if ticket created by them OR assigned to them
+    const employeeMatch = !employeeIdQuery || t.userId == employeeIdQuery || t.employeeId == employeeIdQuery;
+  
+    // For client view: match ticket created by client only
+    const clientMatch = !userIdQuery || t.userId == userIdQuery;
+  
+    return statusMatch && (employeeIdQuery ? employeeMatch : clientMatch);
+  })  
+  .filter(applyFilters)
+  .filter((ticket) =>
+    Object.values(ticket).some((val) =>
+      String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+  )
+  .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "open":
-        return "info";
-      case "inprocess":
-        return "warning";
-      case "closed":
-        return "success";
-      case "handover":
-        return "secondary";
-      case "working":
-        return "primary";
-      default:
-        return "default";
-    }
-  };
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, display: "flex" }}>
@@ -1035,7 +1027,7 @@ const Ticket = () => {
                               label={
                                 ticket.subStatus
                                   ? ticket.subStatus
-                                  : statusMap[ticket.mainStatus]?.[0] || "—"
+                                  : statusMap[ticket.mainStatus?.toLowerCase()]?.[0] || "—"
                               }
                               size="small"
                             />
