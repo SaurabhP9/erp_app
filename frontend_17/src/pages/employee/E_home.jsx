@@ -11,12 +11,12 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import dayjs from "dayjs";
-import { getTicketsByEmployeeId, getTicketsByUserId } from "../../api/ticketApi";
 import { useNavigate } from "react-router-dom";
+import { getEmployeeTicketSummary } from "../../api/homeApi";
 
 export default function E_home() {
-  const [ticketStats, setTicketStats] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const statusMap = {
@@ -27,91 +27,31 @@ export default function E_home() {
     "Total Ticket": "total",
     "Today's Ticket": "today",
     "Assigned Ticket": "assigned",
-  };  
+  };
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
+    const fetchTicketSummary = async () => {
+      const employeeId = localStorage.getItem("userId");
+      if (!employeeId) return console.error("User ID not found in localStorage");
 
-    const fetchTickets = async () => {
       try {
-        const ticketsAssign = await getTicketsByEmployeeId(userId);
-        const createdTickets = await getTicketsByUserId(userId);
-
-        const tickets = [
-          ...ticketsAssign,
-          ...createdTickets.filter(
-            (ct) => !ticketsAssign.some((at) => at._id === ct._id)
-          ),
-        ];
-        const stats = {
-          total: tickets.length,
-          today: 0,
-          assigned: 0,
-          open: 0,
-          inprocess: 0, 
-          closed: 0,
-          handover: 0,  // will now be based on handoverHistory
-          working: 0,
-        };
-
-        const todayStr = dayjs().format("YYYY-MM-DD");
-
-        tickets.forEach((t) => {
-          const created = t.createdTime ? dayjs(t.createdTime).format("YYYY-MM-DD") : null;
-          if (created === todayStr) stats.today++;
-
-          if (t.employeeId) stats.assigned++;
-
-          // Count normal statuses
-          const normalize = (s) =>
-  String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-          const status = normalize(t.mainStatus);
-          if (status && status != "handover" && stats[status] != undefined) {
-            console.log(status);
-            stats[status]++;
-          }
-
-          if (
-            Array.isArray(t.handoverHistory) &&
-            t.handoverHistory.some(
-              (h) => h.fromEmployeeId?.toString() === userId?.toString()
-            )
-          ) {
-            stats.handover++;
-          }
-
-        });
-
-        setTicketStats(stats);
-      } catch (err) {
-        console.error("Failed to load user tickets", err);
+        const summary = await getEmployeeTicketSummary(employeeId);
+        setRows(summary);
+      } catch {
+        setRows([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchTickets();
+    fetchTicketSummary();
   }, []);
 
-  if (!ticketStats) return <div>Loading...</div>;
-
-  const rows = [
-    { id: 1, label: "Total Ticket", total: ticketStats.total },
-    { id: 2, label: "Today's Ticket", total: ticketStats.today },
-    { id: 3, label: "Open Ticket", total: ticketStats.open },
-    { id: 4, label: "In Process Ticket", total: ticketStats.inprocess },
-    { id: 5, label: "Closed Ticket", total: ticketStats.closed },
-    { id: 6, label: "Handover to Customer", total: ticketStats.handover },
-    { id: 7, label: "Assigned Ticket", total: ticketStats.assigned },
-  ];
+  if (loading) return <div>Loading...</div>;
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 6 }}>
-      <Typography
-        variant="h6"
-        fontWeight="bold"
-        gutterBottom
-        fontSize={{ xs: 18, sm: 20 }}
-      >
+      <Typography variant="h6" fontWeight="bold" gutterBottom fontSize={{ xs: 18, sm: 20 }}>
         Ticket Summary
       </Typography>
 
@@ -119,38 +59,28 @@ export default function E_home() {
         <Table size="small" sx={{ border: 1, borderColor: "divider" }}>
           <TableHead sx={{ backgroundColor: "grey" }}>
             <TableRow>
-              <TableCell sx={{ border: 1, color: "#fff", fontWeight: "bold" }}>
-                #
-              </TableCell>
-              <TableCell sx={{ border: 1, color: "#fff", fontWeight: "bold" }}>
-                Ticket
-              </TableCell>
-              <TableCell sx={{ border: 1, color: "#fff", fontWeight: "bold" }}>
-                Count
-              </TableCell>
+              {["#", "Ticket", "Count"].map((header, i) => (
+                <TableCell key={i} sx={{ border: 1, color: "#fff", fontWeight: "bold" }}>
+                  {header}
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => {
+            {rows.map((row, index) => {
               const isClickable = !!statusMap[row.label] && row.total > 0;
               return (
                 <TableRow
-                  key={row.id}
+                  key={index}
                   sx={{
                     cursor: isClickable ? "pointer" : "default",
-                    "&:hover": {
-                      backgroundColor: isClickable ? "#f5f5f5" : "inherit",
-                    },
+                    "&:hover": { backgroundColor: isClickable ? "#f5f5f5" : "inherit" },
                   }}
-                  onClick={() => {
-                    if (isClickable) {
-                      navigate(
-                        `/employee/my-tickets?status=${statusMap[row.label]}`
-                      );
-                    }
-                  }}
+                  onClick={() =>
+                    isClickable && navigate(`/employee/my-tickets?status=${statusMap[row.label]}`)
+                  }
                 >
-                  <TableCell sx={{ border: 1 }}>{row.id}</TableCell>
+                  <TableCell sx={{ border: 1 }}>{index + 1}</TableCell>
                   <TableCell sx={{ border: 1 }}>{row.label}</TableCell>
                   <TableCell
                     sx={{
@@ -177,8 +107,7 @@ export default function E_home() {
           Ahmednagar, Maharashtra, India - 414 003
         </Typography>
         <Typography variant="body2">
-          <strong>Phone No.:</strong> 090285 68867, <strong>Email Id:</strong>{" "}
-          yogesh.kale@clickerpservices.com
+          <strong>Phone No.:</strong> 090285 68867, <strong>Email Id:</strong> yogesh.kale@clickerpservices.com
         </Typography>
         <Typography variant="body2">
           <strong>Website:</strong> clickerpservices.com

@@ -1,70 +1,141 @@
 const { User, Employee, Ticket } = require("../models");
+const dayjs = require("dayjs");
+
 
 exports.getHomeSummary = async (req, res) => {
   try {
-    const allTickets = await Ticket.find();
+    /** -------------------------------
+     * 1. Ticket Summary (Overall)
+     * -------------------------------- */
+    const ticketSummaryData = await Ticket.aggregate([
+      {
+        $group: {
+          _id: "$mainStatus",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
 
     const ticketSummary = {
-      total: allTickets.length,
-      open: allTickets.filter((t) => t.mainStatus == "open").length,
-      closed: allTickets.filter((t) => t.mainStatus == "closed").length,
-      handover: allTickets.filter((t) => t.mainStatus == "handover").length,
-      inProgress: allTickets.filter((t) => t.mainStatus == "inProcess").length,
+      total: 0,
+      open: 0,
+      closed: 0,
+      handover: 0,
+      inProcess: 0,
     };
 
+    ticketSummaryData.forEach((t) => {
+      const key = t._id?.toLowerCase();
+      if (key === "open") ticketSummary.open = t.count;
+      if (key === "closed") ticketSummary.closed = t.count;
+      if (key === "handover") ticketSummary.handover = t.count;
+      if (key === "inprocess") ticketSummary.inProcess = t.count;
+      ticketSummary.total += t.count;
+    });
+
+    /** -------------------------------
+     * 2. Employee Summary
+     *    - Count tickets where:
+     *      employeeId == emp._id OR userId == emp._id
+     *    - Ensure no duplicate counting if both match
+     * -------------------------------- */
+    const employeeSummary = await Ticket.aggregate([
+      {
+        $match: {
+          $or: [
+            { employeeId: { $exists: true, $ne: null } },
+            { userId: { $exists: true, $ne: null } },
+          ],
+        },
+      },
+      {
+        // Group by employee, but avoid duplicates
+        $group: {
+          _id: "$mainStatus",
+          ticketsByEmployee: {
+            $addToSet: {
+              employeeId: "$employeeId",
+              userId: "$userId",
+              ticketId: "$_id",
+              mainStatus: "$mainStatus",
+            },
+          },
+        },
+      },
+    ]);
+
+    // Fetch all employees
     const employees = await User.find({ role: "employee" }).lean();
-    const employeeSummary = await Promise.all(
-      employees.map(async (emp) => {
-        const empTickets = allTickets.filter(
-          (t) => t.employeeId?.toString() === emp._id.toString()
-        );
+    const employeeMap = employees.reduce((acc, emp) => {
+      acc[emp._id.toString()] = {
+        employeeId: emp._id,
+        name: emp.name,
+        email: emp.email,
+        ticketStatus: { open: 0, closed: 0, handover: 0, inProcess: 0 },
+      };
+      return acc;
+    }, {});
 
-        const ticketStatus = {
-          open: empTickets.filter((t) => t.mainStatus == "open").length,
-          closed: empTickets.filter((t) => t.mainStatus == "closed").length,
-          handover: empTickets.filter((t) => t.mainStatus == "handover")
-            .length,
-          inProcess: empTickets.filter((t) => t.mainStatus == "inProcess")
-            .length,
-          // working: empTickets.filter((t) => t.mainStatus === "working").length,
-        };
+    // Merge tickets per employee without duplicates
+    employeeSummary.forEach((statusGroup) => {
+      const status = statusGroup._id.toLowerCase();
 
-        return {
-          employeeId: emp._id,
-          name: emp.name,
-          email: emp.email,
-          ticketStatus,
-        };
-      })
-    );
+      statusGroup.ticketsByEmployee.forEach((ticket) => {
+        // The employee ID to which this ticket belongs
+        const empId = ticket.employeeId?.toString() || ticket.userId?.toString();
 
-    const users = await User.find();
-    const filterUser = users.filter((u) => u.role !== "employee");
-    const userSummary = await Promise.all(
-      filterUser.map(async (user) => {
-        const userTickets = allTickets.filter(
-          (t) => t.userId?.toString() === user._id.toString()
-        );
+        if (!empId || !employeeMap[empId]) return;
 
-        const ticketStatus = {
-          open: userTickets.filter((t) => t.mainStatus == "open").length,
-          closed: userTickets.filter((t) => t.mainStatus == "closed").length,
-          handover: userTickets.filter((t) => t.mainStatus == "handover")
-            .length,
-          inProcess: userTickets.filter((t) => t.mainStatus == "inProcess")
-            .length,
-        };
+        const ticketStatus = employeeMap[empId].ticketStatus;
 
-        return {
-          userId: user._id,
-          name: user.name,
-          email: user.email,
-          ticketStatus,
-        };
-      })
-    );
+        if (status === "open") ticketStatus.open += 1;
+        if (status === "closed") ticketStatus.closed += 1;
+        if (status === "handover") ticketStatus.handover += 1;
+        if (status === "inprocess") ticketStatus.inProcess += 1;
+      });
+    });
 
-    res.json({ ticketSummary, userSummary, employeeSummary });
+    /** -------------------------------
+     * 3. User Summary (Non-employees)
+     * -------------------------------- */
+    const userSummary = await Ticket.aggregate([
+      {
+        $group: {
+          _id: { userId: "$userId", status: "$mainStatus" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const users = await User.find({ role: { $ne: "employee" } }).lean();
+
+    const userMap = users.reduce((acc, user) => {
+      acc[user._id.toString()] = {
+        userId: user._id,
+        name: user.name,
+        email: user.email,
+        ticketStatus: { open: 0, closed: 0, handover: 0, inProcess: 0 },
+      };
+      return acc;
+    }, {});
+
+    userSummary.forEach((record) => {
+      const uId = record._id.userId?.toString();
+      const status = record._id.status?.toLowerCase();
+
+      if (uId && userMap[uId]) {
+        if (status === "open") userMap[uId].ticketStatus.open += record.count;
+        if (status === "closed") userMap[uId].ticketStatus.closed += record.count;
+        if (status === "handover") userMap[uId].ticketStatus.handover += record.count;
+        if (status === "inprocess") userMap[uId].ticketStatus.inProcess += record.count;
+      }
+    });
+
+    res.json({
+      ticketSummary,
+      employeeSummary: Object.values(employeeMap),
+      userSummary: Object.values(userMap),
+    });
   } catch (err) {
     console.error("Home summary error:", err);
     res.status(500).json({ error: err.message });
@@ -114,3 +185,91 @@ exports.getTicketSummaryByRole = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getEmployeeTicketSummary = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    if (!employeeId) {
+      return res.status(400).json({ error: "Employee ID is required" });
+    }
+
+    const todayStr = dayjs().format("YYYY-MM-DD");
+
+    // Fetch only relevant tickets directly from DB
+    const tickets = await Ticket.find({
+      $or: [
+        { employeeId }, // Tickets assigned to the employee
+        { userId: employeeId }, // Tickets created by the employee
+      ],
+    }).lean();
+
+    // Initialize counters
+    const stats = {
+      total: 0,
+      today: 0,
+      assigned: 0,
+      open: 0,
+      inProcess: 0,
+      closed: 0,
+      handover: 0,
+    };
+
+    const normalizeStatus = (s) => String(s || "").toLowerCase();
+
+    // Use a Set to prevent double counting if employee created and was assigned to the same ticket
+    const uniqueTicketIds = new Set();
+
+    tickets.forEach((t) => {
+      const ticketId = t._id.toString();
+      if (uniqueTicketIds.has(ticketId)) return; // Skip duplicates
+      uniqueTicketIds.add(ticketId);
+
+      stats.total++;
+
+      /** ---------- Today's Tickets ---------- */
+      const createdDate = t.createdTime ? dayjs(t.createdTime).format("YYYY-MM-DD") : null;
+      if (createdDate === todayStr) stats.today++;
+
+      /** ---------- Assigned Tickets ---------- */
+      // Assigned tickets
+      // ✅ Only count if employeeId and userId are NOT the same
+      if (
+        t.employeeId?.toString() === employeeId &&
+        t.userId?.toString() !== employeeId
+      ) {
+        stats.assigned++;
+      }
+
+      /** ---------- Status Counts ---------- */
+      const status = normalizeStatus(t.mainStatus);
+      if (status === "open") stats.open++;
+      else if (status === "inprocess") stats.inProcess++;
+      else if (status === "closed") stats.closed++;
+
+      /** ---------- Handover Count ---------- */
+      if (
+        Array.isArray(t.handoverHistory) &&
+        t.handoverHistory.some(h => h.fromEmployeeId?.toString() === employeeId)
+      ) {
+        stats.handover++;
+      }
+    });
+
+    // Prepare response in required format
+    const ticketSummary = [
+      { label: "Total Ticket", total: stats.total },
+      { label: "Today's Ticket", total: stats.today },
+      { label: "Open Ticket", total: stats.open },
+      { label: "In Process Ticket", total: stats.inProcess },
+      { label: "Closed Ticket", total: stats.closed },
+      { label: "Handover to Customer", total: stats.handover },
+      { label: "Assigned Ticket", total: stats.assigned },
+    ];
+
+    res.json({ ticketSummary });
+  } catch (err) {
+    console.error("Error fetching ticket summary:", err);
+    res.status(500).json({ error: "Failed to fetch ticket summary" });
+  }
+};
+

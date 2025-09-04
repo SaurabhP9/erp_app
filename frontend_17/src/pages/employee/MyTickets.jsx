@@ -486,41 +486,68 @@ const E_Ticket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
     const currentUserId = localStorage.getItem("userId");
+    const currentUserName = localStorage.getItem("username");
+
     try {
       let createdOrUpdated;
+      // New Ticket Creation
+      const form = new FormData();
+      // Normalize mainStatus
+      const status = formData.mainStatus?.replace(/\s+/g, "").toLowerCase();
+
+      // ✅ Append handoverHistory if status matches
+      if (status === "inprocess") {
+        const handoverEntry = {
+          fromEmployeeId: currentUserId,
+          toEmployeeId: formData.employeeId,
+          reassignedBy: currentUserId,
+          reassignedAt: new Date().toISOString(),
+        };
+        form.append("handoverHistory", JSON.stringify([handoverEntry]));
+      }
+
+      if (status === "handover") {
+        const handoverEntry = {
+          fromEmployeeId: currentUserId,
+          toClientId: formData.clientId,
+          reassignedBy: currentUserId,
+          reassignedAt: new Date().toISOString(),
+        };
+        form.append("handoverHistory", JSON.stringify([handoverEntry]));
+      }
 
       if (editMode) {
         setIsUpdated(true);
         const originalTicket = tickets.find((t) => t._id === editId);
-        const form = new FormData();
 
+        // ✅ Add all fields to FormData
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
-            const existing = value.filter((file) => typeof file === "string"); // old files
-            const newFiles = value.filter((file) => file instanceof File);     // new uploads
+            const existing = value.filter((file) => typeof file === "string");
+            const newFiles = value.filter((file) => file instanceof File);
 
             if (existing.length > 0) {
               form.append("existingAttachments", JSON.stringify(existing));
             }
             newFiles.forEach((file) => form.append("attachments", file));
-          } else if (key !== "handoverHistory") {
+          } else {
             form.append(key, value ?? "");
           }
         });
 
-        setIsTargetDatePresent(!!originalTicket.targetDate);
-
+        // API call to update
         createdOrUpdated = await updateTicket(editId, form);
 
+        // Update local state with updated ticket
         setTickets((prev) =>
           prev.map((t) =>
             t._id === editId
               ? {
                 ...createdOrUpdated,
                 employee:
-                  employees.find((e) => e._id === createdOrUpdated.employeeId)
-                    ?.name || "",
+                  employees.find((e) => e._id === createdOrUpdated.employeeId)?.name || "",
               }
               : t
           )
@@ -529,45 +556,31 @@ const E_Ticket = () => {
         setSnackbarMessage("Ticket updated successfully!");
         setSnackbarSeverity("success");
       } else {
-        // New Ticket Creation
-        const isHandover =
-          formData.mainStatus === "handover" &&
-          formData.employeeId &&
-          formData.employeeId !== currentUserId;
+        Object.entries(formData).forEach(([key, value]) => {
+          if (key === "attachments") {
+            value.forEach((file) => form.append("attachments", file));
+          } else {
+            form.append(key, value ?? "");
+          }
+        });
+        form.append("userId", currentUserId);
 
-        if (isHandover) {
-          const jsonPayload = {
-            ...formData,
-            userId: currentUserId,
-            handoverHistory: [
-              {
-                fromEmployeeId: currentUserId,
-                toEmployeeId: formData.employeeId,
-                reassignedBy: currentUserId,
-                reassignedAt: new Date().toISOString(),
-              },
-            ],
-          };
-          createdOrUpdated = await createTicket(jsonPayload);
-        } else {
-          const form = new FormData();
-          Object.entries(formData).forEach(([key, value]) => {
-            if (key === "attachments") {
-              value.forEach((file) => form.append("attachments", file));
-            } else {
-              form.append(key, value);
-            }
-          });
-          form.append("userId", currentUserId);
-
-          createdOrUpdated = await createTicket(form);
-        }
+        createdOrUpdated = await createTicket(form);
 
         setTickets((prev) => [...prev, createdOrUpdated]);
         setSnackbarMessage("Ticket created successfully!");
         setSnackbarSeverity("success");
       }
+      // ✅ Add comment automatically if reassigned
 
+      if (status === "inprocess" || status === "handover") {
+        await addReassignmentComment({
+          ticket: createdOrUpdated,
+          status,
+          currentUserId,
+          currentUserName,
+        });
+      }
       setSnackbarOpen(true);
     } catch (err) {
       console.error("Submit failed:", err);
@@ -576,7 +589,7 @@ const E_Ticket = () => {
       setSnackbarOpen(true);
     } finally {
       setIsSubmitting(false);
-      setIsTargetDatePresent(false)
+      setIsTargetDatePresent(false);
     }
 
     setFormData(initialFormData);
@@ -585,6 +598,30 @@ const E_Ticket = () => {
     setEditId(null);
     await fetchAll();
   };
+
+  async function addReassignmentComment({ ticket, status, currentUserId, currentUserName }) {
+    if (!ticket) return;
+
+    let commentText = "";
+    if (status == "inprocess") {
+      const newEmployeeName =
+        employees.find((e) => e._id === ticket.employeeId)?.name || "another employee";
+      commentText = `${currentUserName} reassigned this ticket internally to ${newEmployeeName} as InProcess.`;
+    } else if (status == "handover") {
+      const clientName = clients.find((c) => c._id === ticket.clientId)?.name || "another client";
+      commentText = `${currentUserName} handed this ticket over to the client ${clientName}.`;
+    } else {
+      return;
+    }
+
+    await createComment({
+      ticketId: ticket._id,
+      userId: currentUserId,
+      userName: currentUserName,
+      comment: commentText,
+      visibility: "internal",
+    });
+  }
 
   async function sendEmailToClient(createdOrUpdated, email) {
     const requesterName = localStorage.getItem("username") || "Valued User";

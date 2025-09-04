@@ -128,7 +128,7 @@ export default function Home() {
                 {[
                   ["Total Ticket", ticketSummary.total],
                   ["Open Ticket", ticketSummary.open, "open"],
-                  ["In Process Ticket", ticketSummary.inProgress, "inProcess"],
+                  ["In Process Ticket", ticketSummary.inProcess, "inProcess"],
                   ["Closed Ticket", ticketSummary.closed, "closed"],
                   ["Handover to Customer", ticketSummary.handover, "handover"],
                 ].map(([label, count, status], index) => (

@@ -69,10 +69,10 @@ const ticketSchema = new mongoose.Schema({
   },
   handoverHistory: [
     {
-      fromEmployeeId: String,
-      toEmployeeId: String,
-      toClientId: String,
-      reassignedBy: String,
+      fromEmployeeId: { type: String },
+      toEmployeeId: { type: String },
+      toClientId: { type: String },
+      reassignedBy: { type: String },
       reassignedAt: { type: Date, default: Date.now },
     },
   ],
@@ -85,7 +85,7 @@ const ticketSchema = new mongoose.Schema({
         mimetype: String,
       },
     ],
-    default: [], // ✅ ensures attachments is always an array
+    default: [], // ensures attachments is always an array
   },  
   mainStatus: {
     type: String
