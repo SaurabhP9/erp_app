@@ -91,9 +91,9 @@ const ticketSchema = new mongoose.Schema({
     type: String
   },
   createdBy: String,
-  createdTime: { type: String, default: () => new Date().toISOString() },
+  createdTime: { type: Date, default: Date.now },
   updatedBy: String,
-  updatedTime: { type: String, default: () => new Date().toISOString() },
+  updatedTime: { type: Date, default: Date.now },
 });
 
 ticketSchema.index({ userId: 1 });

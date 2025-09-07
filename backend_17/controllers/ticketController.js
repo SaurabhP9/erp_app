@@ -2,16 +2,16 @@
 const { Timesheet, Ticket, Counter } = require("../models");
 const cloudinary = require("cloudinary").v2;
 
-const formatDate = (isoString) => {
-  const date = new Date(isoString);
-  return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+// const formatDate = (isoString) => {
+//   const date = new Date(isoString);
+//   return date.toLocaleString("en-IN", {
+//     day: "2-digit",
+//     month: "short",
+//     year: "numeric",
+//     hour: "2-digit",
+//     minute: "2-digit",
+//   });
+// };
 
 exports.getFilteredTickets = async (req, res) => {
   try {
@@ -427,6 +427,12 @@ exports.getTicketsByEmployeeId = async (req, res) => {
   }
 };
 
+const formatDate = (input) => {
+  const date = new Date(input);
+  if (isNaN(date.getTime())) return null; // Invalid date
+  return date.toISOString(); // Or custom format
+};
+
 exports.getReportTickets = async (req, res) => {
   try {
     const {
@@ -442,11 +448,16 @@ exports.getReportTickets = async (req, res) => {
     const filter = {};
 
     if (fromDate && toDate) {
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
+      to.setHours(23, 59, 59, 999); // include full end day
+    
       filter.createdTime = {
-        $gte: new Date(fromDate).toISOString(),
-        $lte: new Date(toDate).toISOString(),
+        $gte: from,
+        $lte: to,
       };
     }
+    
 
     if (employeeName) {
       filter.employee = { $regex: employeeName, $options: "i" };
@@ -457,19 +468,19 @@ exports.getReportTickets = async (req, res) => {
     }
 
     if (mainStatus) {
-      filter.mainStatus = new RegExp(mainStatus, "i");
+      const cleanedStatus =
+        mainStatus === "In Process" ? "InProcess" : mainStatus;
+      filter.mainStatus = new RegExp(cleanedStatus?.toLowerCase(), "i");
     }
 
     if (ticketNo) {
       filter.ticketNo = { $regex: ticketNo, $options: "i" };
     }
 
-    // if (report) {
-    //   filter.reportType = report;
-    // }
+    console.log("Filter:", filter);
 
     const tickets = await Ticket.find(filter).sort({ createdTime: -1 });
-
+    console.log("TICket s", tickets);
     const formattedTickets = tickets.map((ticket) => ({
       ...ticket.toObject(),
       createdTime: formatDate(ticket.createdTime),
@@ -482,6 +493,7 @@ exports.getReportTickets = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 exports.getTicketsHandedOverByUser = async (req, res) => {
   try {
