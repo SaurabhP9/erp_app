@@ -74,7 +74,7 @@ export default function Reports() {
 
         setProjects(proj);
         setEmployees(emp);
-        setStatuses();
+        setStatuses(status);
       } catch (err) {
         console.error("Error loading data:", err);
       }
@@ -270,7 +270,7 @@ export default function Reports() {
               fullWidth
             >
               <MenuItem value="">- Select -</MenuItem>
-              {statuses.map((status) => (
+              {statuses?.map((status) => (
                 <MenuItem key={status._id} value={status.mainStatus}>
                   {status.mainStatus}
                 </MenuItem>
