@@ -1,4 +1,3 @@
-
 // server.js
 require("dotenv").config();
 const express = require("express");
@@ -21,7 +20,7 @@ const departmentRoutes = require("./routes/departmentRoutes");
 const timesheetRoutes = require("./routes/timesheetRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 const commentRoutes = require("./routes/commentRoutes");
-const healthRoute = require("./routes/healthRoute");
+// const healthRoute = require("./routes/healthRoute");
 
 const cronRoutes = require("./routes/cronRoutes");
 
@@ -61,7 +60,7 @@ app.use("/uploads", express.static("uploads"));
 
 //CRON
 app.use("/api/cron", cronRoutes);
-app.use("/health", healthRoute);
+// app.use("/health", healthRoute);
 
 app.use("/api", require("./routes/tokenRoutes"));
 app.use("/api/priority", require("./routes/priorityRoutes"));

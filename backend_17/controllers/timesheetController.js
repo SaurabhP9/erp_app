@@ -529,11 +529,11 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     const plainText = `Consolidated timesheet summary for ${today}`;
 
     // 🔹 Hardcoded email IDs
-    const toEmail = "development@clickerpservices.com";
-    const ccEmails = [
-      "yogesh.kale@clickerpservices.com",
-      "prasad.chilwar@clickerpservices.com",
-    ];
+    const toEmail = "saurabh125pathare@gmail.com";
+    // const ccEmails = [
+    //   "yogesh.kale@clickerpservices.com",
+    //   "prasad.chilwar@clickerpservices.com",
+    // ];
 
     await sendEmail(toEmail, subject, plainText, html, ccEmails);
   } catch (err) {
