@@ -17,7 +17,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress
+  CircularProgress,
 } from "@mui/material";
 
 import { sendTicketEmail } from "../../api/emailApi";
@@ -115,7 +115,7 @@ const Client_Ticket = () => {
           getAllCategories(),
           getAllPriorities(),
           getAllUsersByRole("employee"),
-          getAllProjects()
+          getAllProjects(),
         ]);
 
         const userId = localStorage.getItem("userId");
@@ -149,15 +149,17 @@ const Client_Ticket = () => {
           const dept = e.department?.toLowerCase() || "";
           return dept.includes("functional");
         };
-        
+
         const filteredFunctional = emp.filter((e) => {
           const hasProject = e.projects?.some(
-            (proj) => (proj?.toLowerCase()?.trim() || "") === (username?.toLowerCase()?.trim() || "")
+            (proj) =>
+              (proj?.toLowerCase()?.trim() || "") ===
+              (username?.toLowerCase()?.trim() || "")
           );
           const functional = isFunctional(e);
           return hasProject && functional;
         });
-               
+
         filteredFunctional.length > 0
           ? setEmployees(filteredFunctional)
           : setEmployees(emp);
@@ -172,9 +174,9 @@ const Client_Ticket = () => {
           }));
         }
         // filter project
-        const finalProjects = proj.filter(
-          (project)=> username.includes(project.project)
-        ) 
+        const finalProjects = proj.filter((project) =>
+          username.includes(project.project)
+        );
         setProjects(finalProjects);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -191,10 +193,7 @@ const Client_Ticket = () => {
 
       setFormData((prev) => ({
         ...prev,
-        attachments: [
-          ...(prev.attachments || []),
-          ...newFiles,
-        ],
+        attachments: [...(prev.attachments || []), ...newFiles],
       }));
       return;
     }
@@ -249,7 +248,7 @@ const Client_Ticket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (isSubmitting) return; 
+    if (isSubmitting) return;
 
     setIsSubmitting(true); // ✅ Lock before API call
 
@@ -288,6 +287,7 @@ const Client_Ticket = () => {
     } finally {
       setIsSubmitting(false); // Always release lock
     }
+    window.location.reload();
   };
 
   async function sendEmailToClient(createdOrUpdated, email) {
@@ -348,32 +348,41 @@ const Client_Ticket = () => {
     const htmlContent = `
     <div style="background-color: #fdf8e4; padding: 40px 0;">
       <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-        <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
-      },</p>
+        <p style="font-size: 16px;">Dear ${
+          assignedEmployee?.name || "Team"
+        },</p>
 
         <p style="font-size: 15px;">
-          ${isEdit
-        ? "The following ticket has been updated"
-        : "A new ticket has been assigned to you"
-      }. Please review the details below and take appropriate action.
+          ${
+            isEdit
+              ? "The following ticket has been updated"
+              : "A new ticket has been assigned to you"
+          }. Please review the details below and take appropriate action.
         </p>
 
         <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
         <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-          <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
-      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.name
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.subject
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.project
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.category
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.priority
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.issue
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.mainStatus || "Open"
+          }</td></tr>
         </table>
 
         <div style="margin-top: 30px; text-align: center;">
@@ -394,8 +403,9 @@ const Client_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
-        }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
+        createdOrUpdated.name
+      }`,
       html: htmlContent,
     });
   }
@@ -496,7 +506,7 @@ const Client_Ticket = () => {
     const project = ticket.project?.toLowerCase() || "";
     const issue = ticket.issue?.toLowerCase() || "";
     const search = searchTerm?.toLowerCase() || "";
-  
+
     return (
       name.includes(search) ||
       subject.includes(search) ||
@@ -528,9 +538,9 @@ const Client_Ticket = () => {
               onClick={() => {
                 setFormData({
                   ...initialFormData,
-                  project: projects.length > 0 ? projects[0].project : ""
+                  project: projects.length > 0 ? projects[0].project : "",
                 });
-                
+
                 setEditMode(false);
                 setEditId(null);
                 setViewTicket(null);
@@ -752,13 +762,10 @@ const Client_Ticket = () => {
                       fullWidth
                       label="Department"
                       name="department"
-                      value={
-                        departments[0].department
-                      }
-                      disabled={true}   
+                      value={departments[0].department}
+                      disabled={true}
                     />
                   </Grid>
-
 
                   <Grid>
                     <TextField
@@ -855,15 +862,17 @@ const Client_Ticket = () => {
                         type="submit"
                         variant="contained"
                         disabled={isSubmitting}
-                        startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                        startIcon={
+                          isSubmitting ? <CircularProgress size={20} /> : null
+                        }
                       >
                         {isSubmitting
                           ? editMode
                             ? "Updating..."
                             : "Creating..."
                           : editMode
-                            ? "Update"
-                            : "Submit"}
+                          ? "Update"
+                          : "Submit"}
                       </Button>
                       <Button
                         variant="outlined"
