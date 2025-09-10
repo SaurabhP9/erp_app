@@ -948,6 +948,7 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     const plainText = `Consolidated timesheet summary for ${today}`;
     // 🔹 Hardcoded email IDs
     const toEmail = "saurabh125pathare@gmail.com";
+    const ccEmails = "patharesaurabh450@gmail.com";
     // const toEmail = "erpdevelopment@clickerpservices.com";
     // const ccEmails = [
     //   "yogesh.kale@clickerpservices.com",
