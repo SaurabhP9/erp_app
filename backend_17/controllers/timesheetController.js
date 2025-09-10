@@ -899,12 +899,8 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
                                 : "-"
                             }</td>
                             <td>${t.task || "-"}</td>
-                            <td>${dayjs(t.createdAt).format(
-                              "DD-MM-YYYY HH:mm"
-                            )}</td>
-                            <td>${dayjs(t.updatedAt).format(
-                              "DD-MM-YYYY HH:mm"
-                            )}</td>
+                            <td>${dayjs(t.createdAt).format("DD-MM-YYYY")}</td>
+                            <td>${dayjs(t.updatedAt).format("DD-MM-YYYY")}</td>
                             <td>${formatMinutesToHHMM(t.previousWork)}</td>
                             <td>${formatMinutesToHHMM(t.workingTime)}</td>
                             <td>${formatMinutesToHHMM(t.totalWork)}</td>
