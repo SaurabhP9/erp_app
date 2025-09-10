@@ -638,8 +638,8 @@
 //     task: "",
 //     date: "",
 //     workingTime: "",
-//     previousWork: 0, // store minutes
-//     totalWork: 0, // store minutes
+//     previousWork: 0,
+//     totalWork: 0,
 //     project: "",
 //   });
 
@@ -675,17 +675,25 @@
 //     fetchData();
 //   }, [userId, userName]);
 
-//   // Convert HH:MM string → total minutes
+//   // Convert HH:MM → total minutes
 //   const convertHHMMToMinutes = (hhmm) => {
 //     if (!hhmm) return 0;
 //     const [h, m] = hhmm.split(":").map(Number);
 //     return (h || 0) * 60 + (m || 0);
 //   };
 
-//   // Convert minutes → HH:MM string
-//   const formatToHHMM = (minutes) => {
-//     const h = Math.floor((minutes || 0) / 60);
-//     const m = (minutes || 0) % 60;
+//   // Convert stored value (minutes or decimal hours) → HH:MM
+//   const formatToHHMM = (value) => {
+//     if (!value) return "00:00";
+//     let minutes = Number(value);
+
+//     // Old data stored in decimal hours (< 24)
+//     if (minutes > 0 && minutes < 24) {
+//       minutes = Math.round(minutes * 60);
+//     }
+
+//     const h = Math.floor(minutes / 60);
+//     const m = minutes % 60;
 //     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 //   };
 
@@ -697,7 +705,11 @@
 //       if (selected) {
 //         const prevMinutes = timesheetData
 //           .filter((row) => row.ticket === value)
-//           .reduce((sum, row) => sum + (row.workingTime || 0), 0);
+//           .reduce((sum, row) => {
+//             let wt = row.workingTime || 0;
+//             if (wt > 0 && wt < 24) wt = wt * 60; // convert old decimal hours
+//             return sum + wt;
+//           }, 0);
 
 //         const issuedDateFormatted = selected.createdTime
 //           ? dayjs(selected.createdTime, "DD MMM YYYY, hh:mm a").format(
@@ -797,8 +809,8 @@
 //         targetDate: formData.targetDate,
 //         task: formData.task,
 //         date: formData.date,
-//         workingTime: convertHHMMToMinutes(formData.workingTime), // minutes
-//         totalWork: formData.totalWork, // already in minutes
+//         workingTime: convertHHMMToMinutes(formData.workingTime),
+//         totalWork: formData.totalWork,
 //         project: formData.project,
 //         previousWork: formData.previousWork,
 //       };
@@ -1057,7 +1069,11 @@
 //                       .filter(
 //                         (r) => r.ticket === row.ticket && r.date !== row.date
 //                       )
-//                       .reduce((sum, r) => sum + (r.workingTime || 0), 0);
+//                       .reduce((sum, r) => {
+//                         let wt = r.workingTime || 0;
+//                         if (wt > 0 && wt < 24) wt = wt * 60;
+//                         return sum + wt;
+//                       }, 0);
 
 //                     return (
 //                       <TableRow
@@ -1154,9 +1170,9 @@ export default function MyTimesheet() {
     targetDate: "",
     task: "",
     date: "",
-    workingTime: "",
-    previousWork: 0,
-    totalWork: 0,
+    workingTime: "", // stored as HH:MM
+    previousWork: "",
+    totalWork: "",
     project: "",
   });
 
@@ -1192,25 +1208,19 @@ export default function MyTimesheet() {
     fetchData();
   }, [userId, userName]);
 
-  // Convert HH:MM → total minutes
-  const convertHHMMToMinutes = (hhmm) => {
+  // Convert HH:MM → decimal hours
+  const convertHHMMToDecimal = (hhmm) => {
     if (!hhmm) return 0;
     const [h, m] = hhmm.split(":").map(Number);
-    return (h || 0) * 60 + (m || 0);
+    if (h > 23 || m > 59) return 0;
+    return h + m / 60;
   };
 
-  // Convert stored value (minutes or decimal hours) → HH:MM
-  const formatToHHMM = (value) => {
-    if (!value) return "00:00";
-    let minutes = Number(value);
-
-    // Old data stored in decimal hours (< 24)
-    if (minutes > 0 && minutes < 24) {
-      minutes = Math.round(minutes * 60);
-    }
-
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
+  // Convert decimal hours → HH:MM
+  const formatToHHMM = (decimalHours) => {
+    const totalMinutes = Math.round(parseFloat(decimalHours || 0) * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   };
 
@@ -1220,13 +1230,9 @@ export default function MyTimesheet() {
     if (name === "ticket") {
       const selected = tickets.find((t) => t._id === value);
       if (selected) {
-        const prevMinutes = timesheetData
+        const prevWork = timesheetData
           .filter((row) => row.ticket === value)
-          .reduce((sum, row) => {
-            let wt = row.workingTime || 0;
-            if (wt > 0 && wt < 24) wt = wt * 60; // convert old decimal hours
-            return sum + wt;
-          }, 0);
+          .reduce((sum, row) => sum + parseFloat(row.workingTime || 0), 0);
 
         const issuedDateFormatted = selected.createdTime
           ? dayjs(selected.createdTime, "DD MMM YYYY, hh:mm a").format(
@@ -1245,38 +1251,40 @@ export default function MyTimesheet() {
           subject: selected.subject || "",
           issuedDate: issuedDateFormatted,
           targetDate: targetDateFormatted,
-          previousWork: prevMinutes,
+          previousWork: prevWork.toFixed(2),
           workingTime: "",
-          totalWork: prevMinutes,
+          totalWork: prevWork.toFixed(2),
           project: selected.project || "",
         }));
       }
     } else if (name === "workingTime") {
-      let newWorkingTime = value.replace(/[^0-9:]/g, "");
-      const parts = newWorkingTime.split(":");
-      let hours = parts[0] || "";
-      let minutes = parts[1] || "";
-      if (hours.length > 2) hours = hours.substring(0, 2);
-      if (minutes.length > 2) minutes = minutes.substring(0, 2);
-      if (hours && minutes) {
-        newWorkingTime = `${hours}:${minutes}`;
-      } else if (hours) {
-        newWorkingTime = hours + (newWorkingTime.includes(":") ? ":" : "");
-      } else {
-        newWorkingTime = "";
+      let newVal = value.replace(/[^0-9:]/g, "");
+      if (newVal.length === 2 && !newVal.includes(":")) {
+        newVal += ":";
       }
+      const [h = "", m = ""] = newVal.split(":");
+      const safeHours = h.slice(0, 2);
+      const safeMinutes = m.slice(0, 2);
+
+      let formattedVal = "";
+      if (safeHours && safeMinutes)
+        formattedVal = `${safeHours}:${safeMinutes}`;
+      else if (safeHours)
+        formattedVal = safeHours + (newVal.includes(":") ? ":" : "");
 
       const regex = /^(?:2[0-3]|[01]?[0-9]):(?:[0-5]?[0-9])$/;
-      let todayMinutes = 0;
-      if (regex.test(newWorkingTime)) {
-        todayMinutes = convertHHMMToMinutes(newWorkingTime);
+      let todayDecimal = 0;
+      if (regex.test(formattedVal)) {
+        todayDecimal = convertHHMMToDecimal(formattedVal);
       }
 
-      const updatedTotal = (formData.previousWork || 0) + todayMinutes;
+      const updatedTotal = (
+        parseFloat(formData.previousWork || 0) + todayDecimal
+      ).toFixed(2);
 
       setFormData((prev) => ({
         ...prev,
-        workingTime: newWorkingTime,
+        workingTime: formattedVal,
         totalWork: updatedTotal,
       }));
     } else {
@@ -1297,21 +1305,21 @@ export default function MyTimesheet() {
       return;
     }
 
-    const isAllowed =
+    const allowed =
       selectedDate.isSame(today, "day") ||
       selectedDate.isSame(yesterday, "day") ||
       (today.day() === 1 && saturday && selectedDate.isSame(saturday, "day"));
 
-    if (!isAllowed) {
+    if (!allowed) {
       alert(
-        "You can only fill today's or yesterday's timesheet. On Mondays, you can fill Saturday's."
+        "You can only fill today's or yesterday's timesheet. On Mondays, Saturday's also allowed."
       );
       return;
     }
 
     const regex = /^(?:2[0-3]|[01]?[0-9]):(?:[0-5]?[0-9])$/;
     if (!regex.test(formData.workingTime)) {
-      alert("Please enter time in HH:MM format (e.g., 08:30).");
+      alert("Please enter Today's Working Time in HH:MM format (e.g., 08:30).");
       return;
     }
 
@@ -1326,10 +1334,10 @@ export default function MyTimesheet() {
         targetDate: formData.targetDate,
         task: formData.task,
         date: formData.date,
-        workingTime: convertHHMMToMinutes(formData.workingTime),
-        totalWork: formData.totalWork,
+        workingTime: convertHHMMToDecimal(formData.workingTime),
+        totalWork: parseFloat(formData.totalWork),
         project: formData.project,
-        previousWork: formData.previousWork,
+        previousWork: parseFloat(formData.previousWork),
       };
 
       await addTimesheet(payload);
@@ -1347,8 +1355,8 @@ export default function MyTimesheet() {
         task: "",
         date: "",
         workingTime: "",
-        previousWork: 0,
-        totalWork: 0,
+        previousWork: "",
+        totalWork: "",
       }));
     } catch (err) {
       alert(
@@ -1365,11 +1373,7 @@ export default function MyTimesheet() {
     return rowDate.isAfter(today.subtract(4, "day"), "day");
   });
 
-  const cellStyle = {
-    border: 1,
-    textAlign: "center",
-    py: 0.5,
-  };
+  const cellStyle = { border: 1, textAlign: "center", py: 0.5 };
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4 }}>
@@ -1395,8 +1399,8 @@ export default function MyTimesheet() {
                 task: "",
                 date: "",
                 workingTime: "",
-                previousWork: 0,
-                totalWork: 0,
+                previousWork: "",
+                totalWork: "",
               });
             } else {
               setShowForm(true);
@@ -1455,7 +1459,6 @@ export default function MyTimesheet() {
                   <TextField {...params} label="Ticket" required fullWidth />
                 )}
               />
-
               <TextField
                 label="Subject"
                 name="subject"
@@ -1463,7 +1466,6 @@ export default function MyTimesheet() {
                 disabled
                 fullWidth
               />
-
               <TextField
                 label="Project"
                 name="project"
@@ -1471,7 +1473,6 @@ export default function MyTimesheet() {
                 disabled
                 fullWidth
               />
-
               <TextField
                 label="Issued Date"
                 name="issuedDate"
@@ -1507,6 +1508,20 @@ export default function MyTimesheet() {
                 InputLabelProps={{ shrink: true }}
                 required
                 fullWidth
+                inputProps={{
+                  max: dayjs().format("YYYY-MM-DD"),
+                  min: (() => {
+                    const today = dayjs();
+                    const yesterday = today
+                      .subtract(1, "day")
+                      .format("YYYY-MM-DD");
+                    const saturday =
+                      today.day() === 1
+                        ? today.subtract(2, "day").format("YYYY-MM-DD")
+                        : null;
+                    return today.day() === 1 ? saturday : yesterday;
+                  })(),
+                }}
               />
               <TextField
                 label="Previous Working Time"
@@ -1586,11 +1601,11 @@ export default function MyTimesheet() {
                       .filter(
                         (r) => r.ticket === row.ticket && r.date !== row.date
                       )
-                      .reduce((sum, r) => {
-                        let wt = r.workingTime || 0;
-                        if (wt > 0 && wt < 24) wt = wt * 60;
-                        return sum + wt;
-                      }, 0);
+                      .reduce(
+                        (sum, r) => sum + parseFloat(r.workingTime || 0),
+                        0
+                      )
+                      .toFixed(2);
 
                     return (
                       <TableRow
