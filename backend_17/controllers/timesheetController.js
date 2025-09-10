@@ -212,12 +212,12 @@ exports.addTimesheet = async (req, res) => {
     const { employeeId, ticket, date, workingTime} = req.body;
 
     // Prevent duplicate entry for same employee+ticket+date
-    const existing = await Timesheet.findOne({ employeeId, ticket, date });
-    if (existing) {
-      return res
-        .status(400)
-        .json({ message: "Timesheet already exists for this ticket and date" });
-    }
+    // const existing = await Timesheet.findOne({ employeeId, ticket, date });
+    // if (existing) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Timesheet already exists for this ticket and date" });
+    // }
 
     let formattedWorkingTime = workingTime;
     if (typeof workingTime === "number") {

@@ -19,6 +19,6 @@ const TimesheetSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-TimesheetSchema.index({ employeeId: 1, ticket: 1, date: 1 }, { unique: true });
-TimesheetSchema.index({ ticket: 1 });
+// TimesheetSchema.index({ employeeId: 1, ticket: 1, date: 1 }, { unique: true });
+// TimesheetSchema.index({ ticket: 1 });
 module.exports = mongoose.model("Timesheet", TimesheetSchema);
