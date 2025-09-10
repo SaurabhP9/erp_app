@@ -947,13 +947,11 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     const subject = `Consolidated Timesheet Summary - ${today}`;
     const plainText = `Consolidated timesheet summary for ${today}`;
     // 🔹 Hardcoded email IDs
-    const toEmail = "saurabh125pathare@gmail.com";
-    const ccEmails = "patharesaurabh450@gmail.com";
-    // const toEmail = "erpdevelopment@clickerpservices.com";
-    // const ccEmails = [
-    //   "yogesh.kale@clickerpservices.com",
-    //   "prasad.chilwar@clickerpservices.com",
-    // ];
+    const toEmail = "erpdevelopment@clickerpservices.com";
+    const ccEmails = [
+      "yogesh.kale@clickerpservices.com",
+      "prasad.chilwar@clickerpservices.com",
+    ];
     await sendEmail(toEmail, subject, plainText, html, ccEmails);
   } catch (err) {
     console.error("Error sending consolidated timesheet email:", err);
