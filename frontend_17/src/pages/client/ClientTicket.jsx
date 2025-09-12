@@ -1067,7 +1067,7 @@ const Client_Ticket = () => {
                     ) : (
                       <Typography sx={{ mt: 1 }}>{c.comment}</Typography>
                     )}
-                    <Box sx={{ mt: 1 }}>
+                    {/* <Box sx={{ mt: 1 }}>
                       <Button
                         size="small"
                         onClick={() => handleReaction(c._id, "like")}
@@ -1100,7 +1100,7 @@ const Client_Ticket = () => {
                           </Button>
                         </>
                       )}
-                    </Box>
+                    </Box> */}
                   </Paper>
                 ))}
 
