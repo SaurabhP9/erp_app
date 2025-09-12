@@ -575,6 +575,7 @@ const Client_Ticket = () => {
                   <TableRow>
                     {[
                       "#",
+                      "Ticket NO",
                       "Ticket",
                       "Project",
                       "Issue",
@@ -618,15 +619,28 @@ const Client_Ticket = () => {
                         }}
                       >
                         <TableCell sx={{ border: 1 }}>{index + 1}</TableCell>
-                        <TableCell
-                          sx={{
+                        {/* <TableCell
+                          style={{
                             border: 1,
                             cursor: "pointer",
-                            color: "blue",
-                            textAlign: "center",
+                            textDecoration: "underline",
                           }}
                           onClick={() => handleView(ticket)}
                         >
+                          {ticket.ticketNo}
+                        </TableCell> */}
+                        <TableCell
+                          style={{
+                            border: 1,
+                            borderBottom: "1px solid rgba(224, 224, 224, 1)", // Add this line
+                            cursor: "pointer",
+                            textDecoration: "underline",
+                          }}
+                          onClick={() => handleView(ticket)}
+                        >
+                          {ticket.ticketNo}
+                        </TableCell>
+                        <TableCell sx={{ border: 1, textAlign: "center" }}>
                           {ticket.name}
                         </TableCell>
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
