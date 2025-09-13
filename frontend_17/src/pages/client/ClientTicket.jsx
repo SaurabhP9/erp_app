@@ -523,7 +523,7 @@ const Client_Ticket = () => {
   /* RENDER                         */
   /* —————————————————————————————————————————————————— */
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 0.1, mb: 0.1 }}>
       {!showForm && !viewTicket && (
         <>
           <Typography variant="h6" fontWeight="bold">
@@ -532,7 +532,7 @@ const Client_Ticket = () => {
           <Typography color="gray" mb={2}>
             Home → List of Ticket
           </Typography>
-          <Box display="flex" gap={2} mb={3}>
+          <Box display="flex" gap={2} mb={1}>
             <Button
               variant="contained"
               onClick={() => {
@@ -575,10 +575,11 @@ const Client_Ticket = () => {
                   <TableRow>
                     {[
                       "#",
-                      "Ticket NO",
+                      "Ticket Id",
                       "Ticket",
+                      "Assigned By",
                       "Project",
-                      "Issue",
+                      // "Issue",
                       "Submitted Time",
                       "Last Updated",
                       "Status",
@@ -644,20 +645,19 @@ const Client_Ticket = () => {
                           {ticket.name}
                         </TableCell>
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
+                          {ticket.subject}
+                        </TableCell>
+                        <TableCell sx={{ border: 1, textAlign: "center" }}>
                           {ticket.project}
                         </TableCell>
-                        <TableCell sx={{ border: 1, textAlign: "center" }}>
+                        {/* <TableCell sx={{ border: 1, textAlign: "center" }}>
                           {ticket.issue}
+                        </TableCell> */}
+                        <TableCell sx={{ border: 1, textAlign: "center" }}>
+                          {dayjs(ticket.createdTime).format("DD‑MMM‑YYYY ")}
                         </TableCell>
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
-                          {dayjs(ticket.createdTime).format(
-                            "DD‑MMM‑YYYY HH:mm"
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ border: 1, textAlign: "center" }}>
-                          {dayjs(ticket.updatedTime).format(
-                            "DD‑MMM‑YYYY HH:mm"
-                          )}
+                          {dayjs(ticket.updatedTime).format("DD‑MMM‑YYYY ")}
                         </TableCell>
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
                           {ticket.mainStatus}
@@ -721,7 +721,7 @@ const Client_Ticket = () => {
                     <TextField
                       fullWidth
                       required
-                      label="Ticket Name"
+                      label="Ticket Subject"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
@@ -733,7 +733,7 @@ const Client_Ticket = () => {
                     <TextField
                       fullWidth
                       required
-                      label="Subject"
+                      label="Ticket Creator Name"
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
