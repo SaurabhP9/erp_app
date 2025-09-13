@@ -916,7 +916,7 @@ const Client_Ticket = () => {
               sx={{
                 p: 3,
                 position: "relative", // ✅ important
-                border: "1px solid #ddd",
+                border: "3px solid #ddd",
                 backgroundColor: "#fdf8e4",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                 borderRadius: 2,
@@ -1007,8 +1007,14 @@ const Client_Ticket = () => {
                   <Typography sx={{ fontSize: "0.9rem", mb: 0.5 }}>
                     <strong>Description:</strong>
                   </Typography>
-                  <Typography
+                  {/* <Typography
                     sx={{ fontSize: "0.9rem" }}
+                    color="text.secondary"
+                  >
+                    {viewTicket.issue}
+                  </Typography> */}
+                  <Typography
+                    sx={{ fontSize: "0.9rem", whiteSpace: "pre-line" }}
                     color="text.secondary"
                   >
                     {viewTicket.issue}
@@ -1079,7 +1085,12 @@ const Client_Ticket = () => {
                         </Button>
                       </Box>
                     ) : (
-                      <Typography sx={{ mt: 1 }}>{c.comment}</Typography>
+                      // <Typography sx={{ mt: 1 }}>{c.comment}</Typography>
+                      <Typography
+                        sx={{ mt: 1, whiteSpace: "pre-line" }} // ✅ preserves line breaks
+                      >
+                        {c.comment}
+                      </Typography>
                     )}
                     {/* <Box sx={{ mt: 1 }}>
                       <Button
