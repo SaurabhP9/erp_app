@@ -534,13 +534,14 @@ const E_Ticket = () => {
           if (key === "attachments") {
             const existing = value.filter((file) => typeof file === "string");
             const newFiles = value.filter((file) => file instanceof File);
-    
-            if (existing.length) form.append("existingAttachments", JSON.stringify(existing));
+
+            if (existing.length)
+              form.append("existingAttachments", JSON.stringify(existing));
             newFiles.forEach((file) => form.append("attachments", file));
           } else {
             form.append(key, value ?? "");
           }
-        });    
+        });
 
         // API call to update
         createdOrUpdated = await updateTicket(editId, form);
@@ -550,10 +551,11 @@ const E_Ticket = () => {
           prev.map((t) =>
             t._id === editId
               ? {
-                ...createdOrUpdated,
-                employee:
-                  employees.find((e) => e._id === createdOrUpdated.employeeId)?.name || "",
-              }
+                  ...createdOrUpdated,
+                  employee:
+                    employees.find((e) => e._id === createdOrUpdated.employeeId)
+                      ?.name || "",
+                }
               : t
           )
         );
@@ -605,16 +607,24 @@ const E_Ticket = () => {
     await fetchAll();
   };
 
-  async function addReassignmentComment({ ticket, status, currentUserId, currentUserName }) {
+  async function addReassignmentComment({
+    ticket,
+    status,
+    currentUserId,
+    currentUserName,
+  }) {
     if (!ticket) return;
 
     let commentText = "";
     if (status == "inprocess") {
       const newEmployeeName =
-        employees.find((e) => e._id === ticket.employeeId)?.name || "another employee";
+        employees.find((e) => e._id === ticket.employeeId)?.name ||
+        "another employee";
       commentText = `${currentUserName} reassigned this ticket internally to ${newEmployeeName} as InProcess.`;
     } else if (status == "handover") {
-      const clientName = clients.find((c) => c._id === ticket.clientId)?.name || "another client";
+      const clientName =
+        clients.find((c) => c._id === ticket.clientId)?.name ||
+        "another client";
       commentText = `${currentUserName} handed this ticket over to the client ${clientName}.`;
     } else {
       return;
@@ -1615,8 +1625,14 @@ const E_Ticket = () => {
                   <Typography sx={{ fontSize: "0.9rem", mb: 0.5 }}>
                     <strong>Description:</strong>
                   </Typography>
-                  <Typography
+                  {/* <Typography
                     sx={{ fontSize: "0.9rem" }}
+                    color="text.secondary"
+                  >
+                    {viewTicket.issue}
+                  </Typography> */}
+                  <Typography
+                    sx={{ fontSize: "0.9rem", whiteSpace: "pre-line" }}
                     color="text.secondary"
                   >
                     {viewTicket.issue}
@@ -1702,7 +1718,12 @@ const E_Ticket = () => {
                     >
                       {new Date(c.updatedAt || c.createdAt).toLocaleString()}
                     </Typography>
-                    <Typography sx={{ mt: 1 }}>{c.comment}</Typography>
+                    {/* <Typography sx={{ mt: 1 }}>{c.comment}</Typography> */}
+                    <Typography
+                      sx={{ mt: 1, whiteSpace: "pre-line" }} // ✅ preserves line breaks
+                    >
+                      {c.comment}
+                    </Typography>
                   </Paper>
                 ))}
 
