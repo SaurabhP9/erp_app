@@ -1,5 +1,6 @@
 const { User, Employee, Ticket } = require("../models");
 const dayjs = require("dayjs");
+const user = require("../models/user");
 
 exports.getHomeSummary = async (req, res) => {
   try {
@@ -91,38 +92,68 @@ exports.getHomeSummary = async (req, res) => {
     );
 
 
-    const userSummary = await Ticket.aggregate([
-      {
-        $group: {
-          _id: { userId: "$userId", status: "$mainStatus" },
-          count: { $sum: 1 },
+    // 1️⃣ Aggregate tickets and normalize status inside aggregation
+const userSummary = await Ticket.aggregate([
+  {
+    $match: { userId: { $ne: null } }, // ignore tickets without userId
+  },
+  {
+    $project: {
+      userId: 1,
+      // Normalize status to consistent keys
+      status: {
+        $switch: {
+          branches: [
+            { case: { $eq: [{ $toLower: "$mainStatus" }, "open"] }, then: "open" },
+            { case: { $eq: [{ $toLower: "$mainStatus" }, "closed"] }, then: "closed" },
+            { case: { $eq: [{ $toLower: "$mainStatus" }, "handover"] }, then: "handover" },
+            { case: { $in: [{ $toLower: "$mainStatus" }, ["inprocess", "in_process", "in process"]] }, then: "inProcess" },
+          ],
+          default: null, // ignore unknown statuses
         },
       },
-    ]);
+    },
+  },
+  {
+    $match: { status: { $ne: null } }, // only include known statuses
+  },
+  {
+    $group: {
+      _id: { userId: "$userId", status: "$status" },
+      count: { $sum: 1 },
+    },
+  },
+]);
 
-    const users = await User.find({ role: { $ne: "employee" } }).lean();
+// 2️⃣ Fetch users
+const users = await User.find({ role: "client" }).lean();
 
-    const userMap = users.reduce((acc, user) => {
-      acc[user._id.toString()] = {
-        userId: user._id,
-        name: user.name,
-        email: user.email,
-        ticketStatus: { open: 0, closed: 0, handover: 0, inProcess: 0 },
-      };
-      return acc;
-    }, {});
+// 3️⃣ Prepare user map
+const userMap = users.reduce((acc, user) => {
+  acc[user._id.toString()] = {
+    userId: user._id,
+    name: user.name,
+    email: user.email,
+    ticketStatus: { open: 0, closed: 0, handover: 0, inProcess: 0 },
+  };
+  return acc;
+}, {});
 
-    userSummary.forEach((record) => {
-      const uId = record._id.userId?.toString();
-      const status = record._id.status?.toLowerCase();
+// 4️⃣ Map ticket counts to users
+userSummary.forEach((record) => {
+  const uId = record._id.userId?.toString();
+  const statusKey = record._id.status;
 
-      if (uId && userMap[uId]) {
-        if (status === "open") userMap[uId].ticketStatus.open += record.count;
-        if (status === "closed") userMap[uId].ticketStatus.closed += record.count;
-        if (status === "handover") userMap[uId].ticketStatus.handover += record.count;
-        if (status === "inprocess") userMap[uId].ticketStatus.inProcess += record.count;
-      }
-    });
+  if (uId && statusKey && userMap[uId]) {
+    userMap[uId].ticketStatus[statusKey] += record.count;
+  }
+});
+
+// 5️⃣ Convert userMap to array if needed
+const result = Object.values(userMap);
+
+console.log(result);
+
 
     res.json({
       ticketSummary,

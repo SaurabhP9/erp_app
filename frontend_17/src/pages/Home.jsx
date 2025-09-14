@@ -196,7 +196,7 @@ export default function Home() {
         {/* Conditional User Summary */}
         <Grid item xs={12} sm={4} md={4} sx={{ minWidth: "300px" }}>
           <Box sx={{ maxHeight: "65vh", overflowY: "auto" }}>
-            {(roleBaseSummary.length > 0 ? roleBaseSummary : userSummary).map(
+            {(userSummary).map(
               (user, index) => (
                 <Paper key={index} elevation={2} sx={{ p: 1, mb: 2 }}>
                   <Table size="small">
