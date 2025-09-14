@@ -3,8 +3,7 @@ const mongoose = require("mongoose");
 const statusSchema = new mongoose.Schema({
   mainStatus: {
     type: String,
-    required: true,
-    enum: ["open", "inProcess", "closed", "handover", "working"],
+    required: true
   },
   subStatus: {
     type: String,

@@ -252,12 +252,17 @@ const Ticket = () => {
       ]);
 
       const filtered = ticketData.filter((t) => {
-        return (
-          (!userIdQuery || t.userId === userIdQuery) &&
-          (!employeeIdQuery || t.employeeId === employeeIdQuery) &&
-          (!statusQuery || t.mainStatus === statusQuery)
-        );
+        const statusMatch = !statusQuery || t.mainStatus?.toLowerCase().includes(statusQuery);
+  
+        const employeeMatch = !employeeIdQuery || t.userId == employeeIdQuery || t.employeeId == employeeIdQuery;
+      
+        const clientMatch = !userIdQuery || t.userId == userIdQuery;
+      
+        return statusMatch && (employeeIdQuery ? employeeMatch : clientMatch);
       });
+      
+      console.log("empId", employeeIdQuery, "statusQuery", statusQuery)
+      console.log(filtered);
 
       const emp = users.filter((u) => u.role === "employee");
       setTickets(filtered);
@@ -383,11 +388,11 @@ const Ticket = () => {
           if (key === "attachments") {
             const existing = value.filter((f) => typeof f === "string"); // already saved
             const newFiles = value.filter((f) => f instanceof File);     // new uploads
-  
+
             if (existing.length > 0) {
               form.append("existingAttachments", JSON.stringify(existing));
             }
-  
+
             newFiles.forEach((file) => form.append("attachments", file));
           } else if (key !== "handoverHistory") {
             form.append(key, value);
@@ -446,10 +451,9 @@ const Ticket = () => {
           const reassignmentComment = {
             ticketId: editId,
             userId: currentUserId,
-            comment: `Ticket reassigned from ${
-              users.find((u) => u._id === originalTicket.employeeId)?.name ||
+            comment: `Ticket reassigned from ${users.find((u) => u._id === originalTicket.employeeId)?.name ||
               "Unassigned"
-            } to ${selectedEmployee?.name || "Unassigned"}.`,
+              } to ${selectedEmployee?.name || "Unassigned"}.`,
             visibility: "internal",
           };
           await createComment(reassignmentComment);
@@ -482,11 +486,11 @@ const Ticket = () => {
             if (key === "attachments") {
               const existing = value.filter((f) => typeof f === "string");
               const newFiles = value.filter((f) => f instanceof File);
-  
+
               if (existing.length > 0) {
                 form.append("existingAttachments", JSON.stringify(existing));
               }
-  
+
               newFiles.forEach((file) => form.append("attachments", file));
             } else {
               form.append(key, value);
@@ -582,41 +586,32 @@ const Ticket = () => {
     const htmlContent = `
         <div style="background-color: #fdf8e4; padding: 40px 0;">
           <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-            <p style="font-size: 16px;">Dear ${
-              assignedEmployee?.name || "Team"
-            },</p>
+            <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
+      },</p>
     
             <p style="font-size: 15px;">
-              ${
-                isEdit
-                  ? "The following ticket has been updated"
-                  : "A new ticket has been assigned to you"
-              }. Please review the details below and take appropriate action.
+              ${isEdit
+        ? "The following ticket has been updated"
+        : "A new ticket has been assigned to you"
+      }. Please review the details below and take appropriate action.
             </p>
     
             <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
             <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.name
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.subject
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.project
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.category
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.priority
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.issue
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.mainStatus || "Open"
-              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
+      }</td></tr>
             </table>
     
             <div style="margin-top: 30px; text-align: center;">
@@ -637,9 +632,8 @@ const Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
-        createdOrUpdated.name
-      }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
+        }`,
       html: htmlContent,
     });
   }
@@ -745,50 +739,39 @@ const Ticket = () => {
   const statusMap = useMemo(() => {
     const map = {};
     status.forEach(({ mainStatus, subStatus }) => {
-      if (!map[mainStatus]) map[mainStatus] = [];
+      if (!mainStatus) return; 
+      const key = String(mainStatus).toLowerCase();
+  
+      if (!map[key]) map[key] = [];
+  
       if (Array.isArray(subStatus)) {
-        map[mainStatus].push(...subStatus);
-      } else {
-        map[mainStatus].push(subStatus);
+        map[key].push(...subStatus);
+      } else if (subStatus) {
+        map[key].push(subStatus);
       }
     });
     return map;
   }, [status]);
 
-  const getSubStatusFromMainStatus = (mainSt) => statusMap[mainSt] || []; // Changed from subStatusMap to statusMap
-
-  const filteredTickets = tickets
-    .filter((ticket) => {
-      const matchUser = !userIdQuery || ticket.userId === userIdQuery;
-      const matchEmployee =
-        !employeeIdQuery || ticket.employeeId === employeeIdQuery;
-      const matchStatus = !statusQuery || ticket.mainStatus === statusQuery;
-      return matchUser && matchEmployee && matchStatus;
-    })
-    .filter(applyFilters)
-    .filter((ticket) =>
-      Object.values(ticket).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+  const filteredTickets = tickets.filter((t) => {
+    const statusMatch = !statusQuery || t.mainStatus?.toLowerCase().includes(statusQuery);
+  
+    // For employee view: match if ticket created by them OR assigned to them
+    const employeeMatch = !employeeIdQuery || t.userId == employeeIdQuery || t.employeeId == employeeIdQuery;
+  
+    // For client view: match ticket created by client only
+    const clientMatch = !userIdQuery || t.userId == userIdQuery;
+  
+    return statusMatch && (employeeIdQuery ? employeeMatch : clientMatch);
+  })  
+  .filter(applyFilters)
+  .filter((ticket) =>
+    Object.values(ticket).some((val) =>
+      String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+  )
+  .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "open":
-        return "info";
-      case "inprocess":
-        return "warning";
-      case "closed":
-        return "success";
-      case "handover":
-        return "secondary";
-      case "working":
-        return "primary";
-      default:
-        return "default";
-    }
-  };
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, display: "flex" }}>
@@ -972,20 +955,20 @@ const Ticket = () => {
                               idx === 0
                                 ? "5px"
                                 : idx === 1
-                                ? "10px"
-                                : idx === 2
-                                ? "20px"
-                                : idx === 3
-                                ? "20px"
-                                : idx === 4
-                                ? "40px"
-                                : idx === 5 || idx === 6
-                                ? "25px"
-                                : idx === 7 || idx === 8 || idx === 9
-                                ? "25px"
-                                : idx === 10
-                                ? "15px"
-                                : "auto", // ✅ minimum sensible widths
+                                  ? "10px"
+                                  : idx === 2
+                                    ? "20px"
+                                    : idx === 3
+                                      ? "20px"
+                                      : idx === 4
+                                        ? "40px"
+                                        : idx === 5 || idx === 6
+                                          ? "25px"
+                                          : idx === 7 || idx === 8 || idx === 9
+                                            ? "25px"
+                                            : idx === 10
+                                              ? "15px"
+                                              : "auto", // ✅ minimum sensible widths
                           }}
                         >
                           {label}
@@ -1042,9 +1025,9 @@ const Ticket = () => {
                           <TableCell sx={cellStyle}>
                             <Chip
                               label={
-                                statusMap[ticket.mainStatus]
-                                  ? statusMap[ticket.mainStatus].join(", ")
-                                  : "—"
+                                ticket.subStatus
+                                  ? ticket.subStatus
+                                  : statusMap[ticket.mainStatus?.toLowerCase()]?.[0] || "—"
                               }
                               size="small"
                             />
@@ -1210,8 +1193,8 @@ const Ticket = () => {
                     employees.find((e) => e._id === formData.employeeId) || ""
                   }
                   onChange={handleChange}
-                  // This field is required when creating a ticket, but optional for reassignment logic if you handle "unassign"
-                  // required={!editMode} // Uncomment if you want it required only for new tickets
+                // This field is required when creating a ticket, but optional for reassignment logic if you handle "unassign"
+                // required={!editMode} // Uncomment if you want it required only for new tickets
                 >
                   <MenuItem value="">Select</MenuItem>
                   {employees.map((emp) => (

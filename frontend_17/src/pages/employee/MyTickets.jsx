@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
 import {
   Container,
   Typography,
@@ -92,6 +96,7 @@ const initialFormData = {
   mainStatus: "",
   attachments: [],
   targetDate: "",
+  clientId: "",
 };
 
 const E_Ticket = () => {
@@ -151,8 +156,7 @@ const E_Ticket = () => {
   const [snackbarMessage, setSnackbarMessage] = useState(""); // New: State for Snackbar message
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // New: State for Snackbar severity
   const [clients, setClients] = useState([]);
-  const [isHandover, setIsHandover] = useState(null);
-
+  const [isTargetDatePresent, setIsTargetDatePresent] = useState(false);
 
   const cellStyle = {
     border: "1px solid #ccc",
@@ -251,18 +255,27 @@ const E_Ticket = () => {
     try {
       const userId = localStorage.getItem("userId");
       const departmentUser = localStorage.getItem("department");
-      const [ticketData, proj, dept, cat, prio, users, emp, statusList, clients] =
-        await Promise.all([
-          getAllTickets(),
-          getAllProjects(),
-          getAllDepartments(),
-          getAllCategories(),
-          getAllPriorities(),
-          getAllUsers(),
-          getAllUsersByRole("employee"),
-          getAllStatuses(),
-          getAllUsersByRole("client"),
-        ]);
+      const [
+        ticketData,
+        proj,
+        dept,
+        cat,
+        prio,
+        users,
+        emp,
+        statusList,
+        clients,
+      ] = await Promise.all([
+        getAllTickets(),
+        getAllProjects(),
+        getAllDepartments(),
+        getAllCategories(),
+        getAllPriorities(),
+        getAllUsers(),
+        getAllUsersByRole("employee"),
+        getAllStatuses(),
+        getAllUsersByRole("client"),
+      ]);
 
       const assigned = ticketData.filter((t) => t.employeeId === userId);
       const created = ticketData.filter((t) => t.userId === userId);
@@ -271,9 +284,36 @@ const E_Ticket = () => {
         ...created.filter((ct) => !assigned.some((at) => at._id === ct._id)),
       ];
 
-      const filtered = statusQuery
-        ? combined.filter((t) => t.mainStatus === statusQuery)
-        : combined;
+      const normalize = (s) =>
+        String(s || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
+
+      let filtered = combined;
+      if (statusQuery) {
+        const q = normalize(statusQuery);
+
+        if (q === "today") {
+          const today = dayjs().format("YYYY-MM-DD");
+          filtered = combined.filter(
+            (t) =>
+              t.createdTime &&
+              dayjs(t.createdTime).format("YYYY-MM-DD") == today
+          );
+        } else if (q === "assigned") {
+          filtered = combined.filter((t) => t.employeeId === userId);
+        } else if (q === "total") {
+          filtered = combined;
+        } else if (q === "handover") {
+          filtered = combined.filter(
+            (t) =>
+              Array.isArray(t.handoverHistory) &&
+              t.handoverHistory.some((h) => String(h.fromEmployeeId) === userId)
+          );
+        } else {
+          filtered = combined.filter((t) => normalize(t.mainStatus) === q);
+        }
+      }
 
       setTickets(filtered);
       setProjects(proj);
@@ -286,18 +326,12 @@ const E_Ticket = () => {
       setUsers(users);
       setClients(clients);
       setStatus(statusList);
-      setFunctional(departmentUser.toLocaleLowerCase() == "functional")
+      setFunctional(departmentUser.toLocaleLowerCase() == "functional");
     } catch (err) {
       console.error("Error loading data:", err);
     }
   };
 
-  // const isClosed = editMode && formData.mainStatus?.toLowerCase() === "closed";
-  // const alreadyClosed =
-  //   editMode && viewTicket?.mainStatus?.toLowerCase() === "closed";
-
-  // const isClosed = alreadyClosed;
-  // Lock only if the ticket was already closed in DB when we started editing
   const lockAllFields = originalMainStatus === "closed";
 
   const applyFilters = (ticket) => {
@@ -348,42 +382,105 @@ const E_Ticket = () => {
       matchesToDate
     );
   };
+  // const handleChange = (e) => {
+  //   const { name, value, files } = e.target;
+
+  //   if (name === "attachments") {
+  //     const newFiles = Array.from(files);
+
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       attachments: [
+  //         ...(prev.attachments || []),
+  //         ...newFiles,
+  //       ],
+  //     }));
+  //     return;
+  //   }
+
+  //   if (typeof value === "object" && value !== null && value._id) {
+  //     const id = value._id;
+
+  //     const fieldMap = {
+  //       project: { idKey: "projectId", nameKey: "project", labelKey: "project" },
+  //       category: { idKey: "categoryId", nameKey: "category", labelKey: "category" },
+  //       department: { idKey: "departmentId", nameKey: "department", labelKey: "department" },
+  //       priority: { idKey: "priorityId", nameKey: "priority", labelKey: "priority" },
+  //       employeeId: { idKey: "employeeId", nameKey: "employee", labelKey: "name" },
+  //     };
+
+  //     if (fieldMap[name]) {
+  //       const { idKey, nameKey, labelKey } = fieldMap[name];
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         [idKey]: id,
+  //         [nameKey]: value[labelKey],
+  //       }));
+  //     }
+
+  //     return;
+  //   }
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
-    if (name === "attachments") {
+    if (name == "attachments") {
       const newFiles = Array.from(files);
 
       setFormData((prev) => ({
         ...prev,
-        attachments: [
-          ...(prev.attachments || []),
-          ...newFiles,
-        ],
+        attachments: [...(prev.attachments || []), ...newFiles],
       }));
       return;
     }
 
-    if (typeof value === "object" && value !== null && value._id) {
-      const id = value._id;
+    if (name === "employeeId") {
+      const selectedEmployee = employees.find((emp) => emp._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        employeeId: value,
+        employee: selectedEmployee?.name || "",
+      }));
+      return;
+    }
 
-      const fieldMap = {
-        project: { idKey: "projectId", nameKey: "project", labelKey: "project" },
-        category: { idKey: "categoryId", nameKey: "category", labelKey: "category" },
-        department: { idKey: "departmentId", nameKey: "department", labelKey: "department" },
-        priority: { idKey: "priorityId", nameKey: "priority", labelKey: "priority" },
-        employeeId: { idKey: "employeeId", nameKey: "employee", labelKey: "name" },
-      };
+    if (name === "clientId") {
+      const selectedClient = clients.find((c) => c._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        clientId: value,
+        client: selectedClient?.name || "",
+      }));
+      return;
+    }
 
-      if (fieldMap[name]) {
-        const { idKey, nameKey, labelKey } = fieldMap[name];
-        setFormData((prev) => ({
-          ...prev,
-          [idKey]: id,
-          [nameKey]: value[labelKey],
-        }));
-      }
+    if (name === "projectId") {
+      const selectedProject = projects.find((p) => p._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        projectId: value,
+        project: selectedProject?.project || "",
+      }));
+      return;
+    }
 
+    if (name === "categoryId") {
+      const selectedCategory = categories.find((c) => c._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        categoryId: value,
+        category: selectedCategory?.category || "",
+      }));
+      return;
+    }
+
+    if (name === "priorityId") {
+      const selectedPriority = priorities.find((p) => p._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        priorityId: value,
+        priority: selectedPriority?.priority || "",
+      }));
       return;
     }
 
@@ -396,122 +493,101 @@ const E_Ticket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
     const currentUserId = localStorage.getItem("userId");
+    const currentUserName = localStorage.getItem("username");
+
     try {
       let createdOrUpdated;
+      // New Ticket Creation
+      const form = new FormData();
+      // Normalize mainStatus
+      const status = formData.mainStatus?.replace(/\s+/g, "").toLowerCase();
+
+      // ✅ Append handoverHistory if status matches
+      if (status === "inprocess") {
+        const handoverEntry = {
+          fromEmployeeId: currentUserId,
+          toEmployeeId: formData.employeeId,
+          reassignedBy: currentUserId,
+          reassignedAt: new Date().toISOString(),
+        };
+        form.append("handoverHistory", JSON.stringify([handoverEntry]));
+      }
+
+      if (status === "handover") {
+        const handoverEntry = {
+          fromEmployeeId: currentUserId,
+          toClientId: formData.clientId,
+          reassignedBy: currentUserId,
+          reassignedAt: new Date().toISOString(),
+        };
+        form.append("handoverHistory", JSON.stringify([handoverEntry]));
+      }
 
       if (editMode) {
         setIsUpdated(true);
         const originalTicket = tickets.find((t) => t._id === editId);
-        const form = new FormData();
 
+        // ✅ Add all fields to FormData
         Object.entries(formData).forEach(([key, value]) => {
           if (key === "attachments") {
-            const existing = value.filter((file) => typeof file === "string"); // Cloudinary URLs
-            const newFiles = value.filter((file) => file instanceof File);     // New uploads
+            const existing = value.filter((file) => typeof file === "string");
+            const newFiles = value.filter((file) => file instanceof File);
 
-            // Send old URLs separately
-            if (existing.length > 0) {
+            if (existing.length)
               form.append("existingAttachments", JSON.stringify(existing));
-            }
-            // Send only new files as FormData
             newFiles.forEach((file) => form.append("attachments", file));
-          } else if (key !== "handoverHistory") {
-            form.append(key, value);
+          } else {
+            form.append(key, value ?? "");
           }
         });
 
-        // If handover happened during edit
-        const isHandover =
-          formData.mainStatus === "handover" &&
-          formData.employeeId !== originalTicket?.employeeId;
-
-        if (isHandover) {
-          const existingHistory = originalTicket?.handoverHistory || [];
-
-          const newEntry = {
-            fromEmployeeId: originalTicket.employeeId,
-            toEmployeeId: formData.employeeId,
-            reassignedBy: currentUserId,
-            reassignedAt: new Date().toISOString(),
-          };
-
-          // Combine + flatten into FormData as indexed fields
-          const combinedHistory = [...existingHistory, newEntry];
-          combinedHistory.forEach((entry, index) => {
-            form.append(`handoverHistory[${index}].fromEmployeeId`, entry.fromEmployeeId);
-            form.append(`handoverHistory[${index}].toEmployeeId`, entry.toEmployeeId);
-            form.append(`handoverHistory[${index}].reassignedBy`, entry.reassignedBy);
-            form.append(`handoverHistory[${index}].reassignedAt`, new Date(entry.reassignedAt).toISOString());
-          });
-        }
-
+        // API call to update
         createdOrUpdated = await updateTicket(editId, form);
 
+        // Update local state with updated ticket
         setTickets((prev) =>
-          prev.map((t) => (t._id === editId ? createdOrUpdated : t))
+          prev.map((t) =>
+            t._id === editId
+              ? {
+                  ...createdOrUpdated,
+                  employee:
+                    employees.find((e) => e._id === createdOrUpdated.employeeId)
+                      ?.name || "",
+                }
+              : t
+          )
         );
-
-        // Add comment if reassigned
-        if (originalTicket?.employeeId !== formData.employeeId) {
-          const selectedEmployee = employees.find(
-            (emp) => emp._id === formData.employeeId
-          );
-
-          const reassignmentComment = {
-            ticketId: editId,
-            userId: currentUserId,
-            comment: `Ticket reassigned from ${users.find((u) => u._id === originalTicket.employeeId)?.name ||
-              "Unassigned"
-              } to ${selectedEmployee?.name || "Unassigned"}.`,
-            visibility: "internal",
-          };
-
-          await createComment(reassignmentComment);
-        }
 
         setSnackbarMessage("Ticket updated successfully!");
         setSnackbarSeverity("success");
       } else {
-        // New Ticket Creation
-        const isHandover =
-          formData.mainStatus === "handover" &&
-          formData.employeeId &&
-          formData.employeeId !== currentUserId;
+        Object.entries(formData).forEach(([key, value]) => {
+          if (key === "attachments") {
+            value.forEach((file) => form.append("attachments", file));
+          } else {
+            form.append(key, value ?? "");
+          }
+        });
+        form.append("userId", currentUserId);
 
-        if (isHandover) {
-          const jsonPayload = {
-            ...formData,
-            userId: currentUserId,
-            handoverHistory: [
-              {
-                fromEmployeeId: currentUserId,
-                toEmployeeId: formData.employeeId,
-                reassignedBy: currentUserId,
-                reassignedAt: new Date().toISOString(),
-              },
-            ],
-          };
-          createdOrUpdated = await createTicket(jsonPayload);
-        } else {
-          const form = new FormData();
-          Object.entries(formData).forEach(([key, value]) => {
-            if (key === "attachments") {
-              value.forEach((file) => form.append("attachments", file));
-            } else {
-              form.append(key, value);
-            }
-          });
-          form.append("userId", currentUserId);
-
-          createdOrUpdated = await createTicket(form);
-        }
+        createdOrUpdated = await createTicket(form);
 
         setTickets((prev) => [...prev, createdOrUpdated]);
         setSnackbarMessage("Ticket created successfully!");
         setSnackbarSeverity("success");
       }
+      // ✅ Add comment automatically if reassigned
 
+      if (status === "inprocess" || status === "handover") {
+        await addReassignmentComment({
+          ticket: createdOrUpdated,
+          status,
+          currentUserId,
+          currentUserName,
+        });
+      }
       setSnackbarOpen(true);
     } catch (err) {
       console.error("Submit failed:", err);
@@ -520,6 +596,8 @@ const E_Ticket = () => {
       setSnackbarOpen(true);
     } finally {
       setIsSubmitting(false);
+      setIsTargetDatePresent(false);
+      setIsTargetDatePresent(false);
     }
 
     setFormData(initialFormData);
@@ -528,6 +606,38 @@ const E_Ticket = () => {
     setEditId(null);
     await fetchAll();
   };
+
+  async function addReassignmentComment({
+    ticket,
+    status,
+    currentUserId,
+    currentUserName,
+  }) {
+    if (!ticket) return;
+
+    let commentText = "";
+    if (status == "inprocess") {
+      const newEmployeeName =
+        employees.find((e) => e._id === ticket.employeeId)?.name ||
+        "another employee";
+      commentText = `${currentUserName} reassigned this ticket internally to ${newEmployeeName} as InProcess.`;
+    } else if (status == "handover") {
+      const clientName =
+        clients.find((c) => c._id === ticket.clientId)?.name ||
+        "another client";
+      commentText = `${currentUserName} handed this ticket over to the client ${clientName}.`;
+    } else {
+      return;
+    }
+
+    await createComment({
+      ticketId: ticket._id,
+      userId: currentUserId,
+      userName: currentUserName,
+      comment: commentText,
+      visibility: "internal",
+    });
+  }
 
   async function sendEmailToClient(createdOrUpdated, email) {
     const requesterName = localStorage.getItem("username") || "Valued User";
@@ -588,32 +698,41 @@ const E_Ticket = () => {
     const htmlContent = `
         <div style="background-color: #fdf8e4; padding: 40px 0;">
           <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-            <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
-      },</p>
+            <p style="font-size: 16px;">Dear ${
+              assignedEmployee?.name || "Team"
+            },</p>
 
             <p style="font-size: 15px;">
-              ${isEdit
-        ? "The following ticket has been updated"
-        : "A new ticket has been assigned to you"
-      }. Please review the details below and take appropriate action.
+              ${
+                isEdit
+                  ? "The following ticket has been updated"
+                  : "A new ticket has been assigned to you"
+              }. Please review the details below and take appropriate action.
             </p>
 
             <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
             <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
-      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.name
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.subject
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.project
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.category
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.priority
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.issue
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.mainStatus || "Open"
+              }</td></tr>
             </table>
 
             <div style="margin-top: 30px; text-align: center;">
@@ -634,8 +753,9 @@ const E_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
-        }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
+        createdOrUpdated.name
+      }`,
       html: htmlContent,
     });
   }
@@ -651,6 +771,7 @@ const E_Ticket = () => {
     const selectedEmployee = employees.find((e) => e._id === ticket.employeeId);
 
     setFormData({
+      ...formData,
       name: ticket.name,
       subject: ticket.subject,
       projectId: ticket.projectId,
@@ -665,9 +786,12 @@ const E_Ticket = () => {
       mainStatus: ticket.mainStatus,
       employeeId: ticket.employeeId,
       employee: selectedEmployee?.name || "",
+      clientId: ticket.clientId || "",
       attachments: [],
-      targetDate: ticket.targetDate || "",
+      targetDate: dayjs(ticket.targetDate) || "",
     });
+
+    setIsTargetDatePresent(!!ticket.targetDate);
     setOriginalMainStatus((ticket.mainStatus || "").toLowerCase());
     setEditMode(true);
     setEditId(ticket._id);
@@ -750,25 +874,28 @@ const E_Ticket = () => {
   const statusMap = useMemo(() => {
     const map = {};
     status.forEach(({ mainStatus, subStatus }) => {
-      if (!map[mainStatus]) map[mainStatus] = [];
+      if (!mainStatus) return; // 🚨 skip if null/undefined
+
+      const key = String(mainStatus).toLowerCase();
+
+      if (!map[key]) map[key] = [];
+
       if (Array.isArray(subStatus)) {
-        map[mainStatus].push(...subStatus);
-      } else {
-        map[mainStatus].push(subStatus);
+        map[key].push(...subStatus);
+      } else if (subStatus) {
+        map[key].push(subStatus);
       }
     });
     return map;
   }, [status]);
 
-  const getSubStatusFromMainStatus = (mainSt) => statusMap[mainSt] || [];
-
   const sortedTickets = React.useMemo(() => {
     let filtered = tickets.filter(
       (ticket) =>
-        ticket.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ticket.issue.toLowerCase().includes(searchTerm.toLowerCase())
+        ticket?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket?.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket?.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket?.issue?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     filtered = filtered.filter(applyFilters);
 
@@ -832,7 +959,7 @@ const E_Ticket = () => {
                   "assignee",
                   "priority",
                 ].map((key) => (
-                  <Grid item xs={12} key={key}>
+                  <Grid xs={12} key={key}>
                     <TextField
                       fullWidth
                       size="small"
@@ -847,7 +974,7 @@ const E_Ticket = () => {
                     />
                   </Grid>
                 ))}
-                <Grid item xs={12}>
+                <Grid xs={12}>
                   <TextField
                     fullWidth
                     size="small"
@@ -863,7 +990,7 @@ const E_Ticket = () => {
                     }
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid xs={12}>
                   <TextField
                     fullWidth
                     size="small"
@@ -879,12 +1006,12 @@ const E_Ticket = () => {
                     }
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid xs={6}>
                   <Button variant="outlined" onClick={exportToExcel} fullWidth>
                     Export Excel
                   </Button>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid xs={6}>
                   <Button variant="outlined" onClick={exportToPDF} fullWidth>
                     Export PDF
                   </Button>
@@ -1006,20 +1133,20 @@ const E_Ticket = () => {
                               idx === 0
                                 ? "5px"
                                 : idx === 1
-                                  ? "10px"
-                                  : idx === 2
-                                    ? "20px"
-                                    : idx === 3
-                                      ? "20px"
-                                      : idx === 4
-                                        ? "40px"
-                                        : idx === 5 || idx === 6 // ✅ Submitted Time & Target Date same width
-                                          ? "25px"
-                                          : idx === 7 || idx === 8 || idx === 9
-                                            ? "25px"
-                                            : idx === 10
-                                              ? "15px"
-                                              : "auto",
+                                ? "10px"
+                                : idx === 2
+                                ? "20px"
+                                : idx === 3
+                                ? "20px"
+                                : idx === 4
+                                ? "40px"
+                                : idx === 5 || idx === 6 // ✅ Submitted Time & Target Date same width
+                                ? "25px"
+                                : idx === 7 || idx === 8 || idx === 9
+                                ? "25px"
+                                : idx === 10
+                                ? "15px"
+                                : "auto",
                           }}
                         >
                           {label}
@@ -1115,8 +1242,10 @@ const E_Ticket = () => {
                           >
                             <Chip
                               label={
-                                statusMap[ticket.mainStatus]
-                                  ? statusMap[ticket.mainStatus].join(", ")
+                                statusMap[ticket.mainStatus?.toLowerCase()]
+                                  ? statusMap[
+                                      ticket.mainStatus?.toLowerCase()
+                                    ].join(", ")
                                   : "—"
                               }
                               size="small"
@@ -1170,7 +1299,7 @@ const E_Ticket = () => {
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2} direction="column">
-              <Grid item>
+              <Grid>
                 <TextField
                   fullWidth
                   required
@@ -1181,7 +1310,7 @@ const E_Ticket = () => {
                   disabled={lockAllFields}
                 />
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   fullWidth
                   required
@@ -1192,84 +1321,103 @@ const E_Ticket = () => {
                   disabled={lockAllFields}
                 />
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
                   required
                   label="Project"
-                  name="project"
-                  value={
-                    projects.find((p) => p._id === formData.projectId) || ""
-                  }
+                  name="projectId"
+                  value={formData.projectId || ""}
                   onChange={handleChange}
                   disabled={lockAllFields}
                 >
                   <MenuItem value="">Select</MenuItem>
                   {projects.map((proj) => (
-                    <MenuItem key={proj._id} value={proj}>
+                    <MenuItem key={proj._id} value={proj._id}>
                       {proj.project}
                     </MenuItem>
                   ))}
                 </TextField>
               </Grid>
 
-              <Grid item>
-                <TextField
-                  fullWidth
-                  required={!formData.targetDate}
-                  type="date"
+              {/* <TextField
+                margin="dense"
+                type="date"
+                fullWidth
+                variant="outlined"
+                required={!formData.targetDate}
+                value={
+                  formData.targetDate
+                    ? dayjs(formData.targetDate, ["DD-MM-YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD")
+                    : ""
+                }
+                onChange={handleChange}
+                disabled={isTargetDatePresent}
+              /> */}
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
                   label="Target Date"
-                  name="targetDate"
-                  value={formData.targetDate || ""}
-                  onChange={handleChange}
-                  disabled={lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)}
+                  format="DD/MM/YYYY" // 👈 Force input/output format
+                  value={
+                    formData.targetDate
+                      ? dayjs(formData.targetDate, ["DD/MM/YYYY", "YYYY-MM-DD"])
+                      : null
+                  }
+                  onChange={(newValue) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      targetDate: newValue || null,
+                    }));
+                  }}
+                  disablePast
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: !formData.targetDate,
+                    },
+                  }}
                 />
-              </Grid>
+              </LocalizationProvider>
 
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
                   required
                   label="Category"
-                  name="category"
-                  value={
-                    categories.find((c) => c._id === formData.categoryId) || ""
-                  }
+                  name="categoryId"
+                  value={formData.categoryId || ""}
                   onChange={handleChange}
                   disabled={lockAllFields}
                 >
                   <MenuItem value="">Select</MenuItem>
                   {categories.map((cat) => (
-                    <MenuItem key={cat._id} value={cat}>
+                    <MenuItem key={cat._id} value={cat._id}>
                       {cat.category}
                     </MenuItem>
                   ))}
                 </TextField>
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
                   required
                   label="Priority"
-                  name="priority"
-                  value={
-                    priorities.find((p) => p._id === formData.priorityId) || ""
-                  }
+                  name="priorityId"
+                  value={formData.priorityId || ""}
                   onChange={handleChange}
-                  disabled={lockAllFields}
                 >
                   <MenuItem value="">Select</MenuItem>
                   {priorities.map((pri) => (
-                    <MenuItem key={pri._id} value={pri}>
+                    <MenuItem key={pri._id} value={pri._id}>
                       {pri.priority}
                     </MenuItem>
                   ))}
                 </TextField>
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
@@ -1279,10 +1427,13 @@ const E_Ticket = () => {
                   value={formData.mainStatus}
                   onChange={handleChange}
                   disabled={
-                    lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)
+                    lockAllFields ||
+                    (editMode &&
+                      isUpdated &&
+                      formData.employeeId !== currentUserId)
                   }
                 >
-                   <MenuItem value="">Select</MenuItem>
+                  <MenuItem value="">Select</MenuItem>
                   {status.map((st) => {
                     if (st.mainStatus === "handover" && !functional) {
                       return null;
@@ -1295,37 +1446,43 @@ const E_Ticket = () => {
                   })}
                 </TextField>
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   select
                   fullWidth
                   required
-                  label={formData.mainStatus === "handover" ? "Assign To Client" : "Assign To Employee"}
-                  name={formData.mainStatus === "handover" ? "clientId" : "employeeId"}
-                  value={
-                    formData.mainStatus === "handover"
-                      ? clients.find((c) => c._id === formData.clientId)?._id || ""
-                      : employees.find((e) => e._id === formData.employeeId)?._id || ""
+                  label={
+                    formData.mainStatus?.toLowerCase() === "handover"
+                      ? "Assign To Client"
+                      : "Assign To Employee"
                   }
-                  disabled={lockAllFields || (editMode && isUpdated && formData.employeeId !== currentUserId)}
+                  name={
+                    formData.mainStatus?.toLowerCase() === "handover"
+                      ? "clientId"
+                      : "employeeId"
+                  }
+                  value={
+                    formData.mainStatus?.toLowerCase() === "handover"
+                      ? formData.clientId || ""
+                      : formData.employeeId || ""
+                  }
                   onChange={handleChange}
                 >
                   <MenuItem value="">Select</MenuItem>
-
-                  {formData.mainStatus === "handover"
+                  {formData.mainStatus?.toLowerCase() === "handover"
                     ? clients.map((client) => (
-                      <MenuItem key={client._id} value={client._id}>
-                        {client.name}
-                      </MenuItem>
-                    ))
+                        <MenuItem key={client._id} value={client._id}>
+                          {client.name}
+                        </MenuItem>
+                      ))
                     : employees.map((emp) => (
-                      <MenuItem key={emp._id} value={emp._id}>
-                        {emp.name}
-                      </MenuItem>
-                    ))}
+                        <MenuItem key={emp._id} value={emp._id}>
+                          {emp.name}
+                        </MenuItem>
+                      ))}
                 </TextField>
               </Grid>
-              <Grid item>
+              <Grid>
                 <TextField
                   fullWidth
                   required
@@ -1338,7 +1495,7 @@ const E_Ticket = () => {
                   disabled={lockAllFields}
                 />
               </Grid>
-              <Grid item>
+              <Grid>
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   Attachments
                 </Typography>
@@ -1349,16 +1506,16 @@ const E_Ticket = () => {
                   onChange={handleChange}
                   disabled={lockAllFields}
                 />
-                {formData.attachments.length > 0 && (
+                {formData.attachments?.length > 0 && (
                   <List>
-                    {formData.attachments.map((file, i) => (
+                    {formData.attachments?.map((file, i) => (
                       <ListItem key={i}>{file.name}</ListItem>
                     ))}
                   </List>
                 )}
               </Grid>
 
-              <Grid item>
+              <Grid>
                 <Box mt={2} display="flex" gap={2}>
                   <Button
                     type="submit"
@@ -1373,8 +1530,8 @@ const E_Ticket = () => {
                         ? "Updating..."
                         : "Creating..."
                       : editMode
-                        ? "Update"
-                        : "Submit"}
+                      ? "Update"
+                      : "Submit"}
                   </Button>
                   <Button variant="outlined" onClick={() => setShowForm(false)}>
                     Back
@@ -1450,7 +1607,7 @@ const E_Ticket = () => {
                   ["Category", viewTicket.category],
                   ["Submitted", formatToIST(viewTicket.createdTime)],
                   [
-                    "Target Date",
+                    "",
                     viewTicket.targetDate
                       ? dayjs(viewTicket.targetDate).format("DD MMM YYYY")
                       : "—",
@@ -1468,8 +1625,14 @@ const E_Ticket = () => {
                   <Typography sx={{ fontSize: "0.9rem", mb: 0.5 }}>
                     <strong>Description:</strong>
                   </Typography>
-                  <Typography
+                  {/* <Typography
                     sx={{ fontSize: "0.9rem" }}
+                    color="text.secondary"
+                  >
+                    {viewTicket.issue}
+                  </Typography> */}
+                  <Typography
+                    sx={{ fontSize: "0.9rem", whiteSpace: "pre-line" }}
                     color="text.secondary"
                   >
                     {viewTicket.issue}
@@ -1481,7 +1644,8 @@ const E_Ticket = () => {
                 <Typography variant="subtitle1" fontWeight="bold" mb={1}>
                   📎 Attachments
                 </Typography>
-                {viewTicket.attachments?.length > 0 ? (
+                {Array.isArray(viewTicket.attachments) &&
+                viewTicket.attachments.length > 0 ? (
                   viewTicket.attachments.map((file, i) => (
                     <Box
                       key={i}
@@ -1491,10 +1655,9 @@ const E_Ticket = () => {
                       <a
                         href={file.url}
                         target="_blank"
-                        rel="noreferrer"
-                        style={{ marginRight: "8px" }}
+                        rel="noopener noreferrer"
                       >
-                        📄 {file.filename}
+                        {file.filename || `Attachment ${i + 1}`}
                       </a>
 
                       {/* Delete Icon */}
@@ -1504,7 +1667,10 @@ const E_Ticket = () => {
                           size="small"
                           onClick={async () => {
                             try {
-                              const updatedTicket = await deleteAttachment(viewTicket._id, file.public_id);
+                              const updatedTicket = await deleteAttachment(
+                                viewTicket._id,
+                                file.public_id
+                              );
 
                               setViewTicket(updatedTicket);
                               setTickets((prev) =>
@@ -1513,12 +1679,16 @@ const E_Ticket = () => {
                                 )
                               );
 
-                              setSnackbarMessage("Attachment deleted successfully!");
+                              setSnackbarMessage(
+                                "Attachment deleted successfully!"
+                              );
                               setSnackbarSeverity("success");
                               setSnackbarOpen(true);
                             } catch (err) {
                               console.error("Attachment delete failed:", err);
-                              setSnackbarMessage("Failed to delete attachment.");
+                              setSnackbarMessage(
+                                "Failed to delete attachment."
+                              );
                               setSnackbarSeverity("error");
                               setSnackbarOpen(true);
                             }
@@ -1548,7 +1718,12 @@ const E_Ticket = () => {
                     >
                       {new Date(c.updatedAt || c.createdAt).toLocaleString()}
                     </Typography>
-                    <Typography sx={{ mt: 1 }}>{c.comment}</Typography>
+                    {/* <Typography sx={{ mt: 1 }}>{c.comment}</Typography> */}
+                    <Typography
+                      sx={{ mt: 1, whiteSpace: "pre-line" }} // ✅ preserves line breaks
+                    >
+                      {c.comment}
+                    </Typography>
                   </Paper>
                 ))}
 
@@ -1614,7 +1789,10 @@ const E_Ticket = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      onClick={() => setConfirmOpen(false)}
+                      onClick={() => {
+                        setConfirmOpen(false);
+                        setIsTargetDatePresent(false);
+                      }}
                     >
                       Cancel
                     </Button>

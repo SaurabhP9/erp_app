@@ -1,15 +1,23 @@
 import api from "./api";
 
 export const getHomeSummary = async () => {
-  console.log("ADmin calling...")
   const res = await api.get("/api/home/");
-  console.log("ADmin ", res.data);
   return res.data;
 };
 
 export const getTicketSummaryByRole = async (role) => {
-  console.log("ADmin calling...");
   const res = await api.get(`/api/home/${role}`);
-  console.log("employee ", res.data);
   return res.data.userSummary;
+};
+
+export const getEmployeeTicketSummary = async (employeeId) => {
+  if (!employeeId) throw new Error("User ID is required to fetch summary");
+
+  try {
+    const { data } = await api.get(`/api/home/emp/summary/${employeeId}`);
+    return data?.ticketSummary || [];
+  } catch (error) {
+    console.error("Failed to fetch employee ticket summary:", error.response?.data || error.message);
+    throw error;
+  }
 };

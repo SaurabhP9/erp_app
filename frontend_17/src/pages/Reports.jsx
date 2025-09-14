@@ -21,6 +21,7 @@ import autoTable from "jspdf-autotable";
 import { getFilterTickets } from "../api/ticketApi";
 import { getAllProjects } from "../api/dropDownApi";
 import { getAllUsersByRole } from "../api/userApi";
+import { getAllStatuses } from "../api/statusApi";
 
 const getDateString = (offset = 0) => {
   const d = new Date();
@@ -48,14 +49,15 @@ export default function Reports() {
   const [projects, setProjects] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [showReport, setShowReport] = useState(false);
+  const [statuses, setStatuses] = useState([]);
 
-  const statuses = ["Open", "In Process", "Closed", "Working", "Handover"];
   const headers = [
     "#",
     "Date",
     "Employee",
     "Project",
     "Status",
+    "Target Date",
     "Ticket No",
     "Subject",
     "Category",
@@ -64,12 +66,15 @@ export default function Reports() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [proj, emp] = await Promise.all([
+        const [proj, emp, status] = await Promise.all([
           getAllProjects(),
           getAllUsersByRole("employee"),
+          getAllStatuses()
         ]);
+
         setProjects(proj);
         setEmployees(emp);
+        setStatuses(status);
       } catch (err) {
         console.error("Error loading data:", err);
       }
@@ -80,6 +85,11 @@ export default function Reports() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString("en-GB"); // DD/MM/YYYY format
   };
 
   const applyFilters = async () => {
@@ -103,6 +113,7 @@ export default function Reports() {
       row.employee,
       row.project,
       row.mainStatus,
+      row.targetDate ? formatDate(row.targetDate) : "",
       row.ticketNo,
       row.subject || "",
       row.category || "",
@@ -259,9 +270,9 @@ export default function Reports() {
               fullWidth
             >
               <MenuItem value="">- Select -</MenuItem>
-              {statuses.map((status) => (
-                <MenuItem key={status} value={status}>
-                  {status}
+              {statuses?.map((status) => (
+                <MenuItem key={status._id} value={status.mainStatus}>
+                  {status.mainStatus}
                 </MenuItem>
               ))}
             </TextField>
@@ -388,7 +399,7 @@ export default function Reports() {
                           {i + 1}
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
-                          {formatDateTime(row.createdTime)}
+                          {formatDate(row.createdTime)}
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
                           {row.employee}
@@ -398,6 +409,9 @@ export default function Reports() {
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
                           {row.mainStatus}
+                        </TableCell>
+                        <TableCell sx={{ border: "1px solid #ccc" }}>
+                          {row.targetDate ? formatDate(row.targetDate) : ""}
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
                           {row.ticketNo}

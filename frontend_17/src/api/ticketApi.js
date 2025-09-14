@@ -18,12 +18,12 @@ export const createTicket = async (formData) => {
 
 
 export const updateTicket = async (id, ticketData) => {
-  console.log("ticket sending", ticketData);
+
   const res = await api.put(`/api/ticket/${id}`, ticketData, {
     headers: {
       "Content-Type": "multipart/form-data",
     }});
-  console.log("response sending", ticketData);
+
   return res.data;
 };
 

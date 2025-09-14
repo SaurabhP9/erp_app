@@ -53,7 +53,6 @@ export default function Home() {
         } else {
           setRoleBasedSummary([]);
         }
-        console.log("role based summary ", roleBaseSummary);
       } catch (err) {
         console.error("Failed to fetch home summary:", err);
       }
@@ -128,7 +127,7 @@ export default function Home() {
                 {[
                   ["Total Ticket", ticketSummary.total],
                   ["Open Ticket", ticketSummary.open, "open"],
-                  ["In Process Ticket", ticketSummary.inProgress, "inProcess"],
+                  ["In Process Ticket", ticketSummary.inProcess, "inProcess"],
                   ["Closed Ticket", ticketSummary.closed, "closed"],
                   ["Handover to Customer", ticketSummary.handover, "handover"],
                 ].map(([label, count, status], index) => (
@@ -178,7 +177,7 @@ export default function Home() {
                             sx={{ ...cellStyle, ...orangeText }}
                             onClick={() =>
                               navigate(
-                                `/ticket?employeeId=${emp.employeeId}&status=${key}`
+                                `/ticket?employeeId=${emp.employeeId}&status=${key.toLowerCase()}`
                               )
                             }
                           >
@@ -197,7 +196,7 @@ export default function Home() {
         {/* Conditional User Summary */}
         <Grid item xs={12} sm={4} md={4} sx={{ minWidth: "300px" }}>
           <Box sx={{ maxHeight: "65vh", overflowY: "auto" }}>
-            {(roleBaseSummary.length > 0 ? roleBaseSummary : userSummary).map(
+            {(userSummary).map(
               (user, index) => (
                 <Paper key={index} elevation={2} sx={{ p: 1, mb: 2 }}>
                   <Table size="small">
@@ -223,7 +222,7 @@ export default function Home() {
                               sx={{ ...cellStyle, ...orangeText }}
                               onClick={() =>
                                 navigate(
-                                  `/ticket?userId=${user.userId}&status=${key}`
+                                  `/ticket?userId=${user.userId}&status=${key.toLowerCase()}`
                                 )
                               }
                             >

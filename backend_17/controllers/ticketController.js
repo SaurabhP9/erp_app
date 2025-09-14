@@ -2,16 +2,16 @@
 const { Timesheet, Ticket, Counter } = require("../models");
 const cloudinary = require("cloudinary").v2;
 
-const formatDate = (isoString) => {
-  const date = new Date(isoString);
-  return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+// const formatDate = (isoString) => {
+//   const date = new Date(isoString);
+//   return date.toLocaleString("en-IN", {
+//     day: "2-digit",
+//     month: "short",
+//     year: "numeric",
+//     hour: "2-digit",
+//     minute: "2-digit",
+//   });
+// };
 
 exports.getFilteredTickets = async (req, res) => {
   try {
@@ -60,59 +60,68 @@ exports.createTicket = async (req, res) => {
   try {
     const { mainStatus, userId, employeeId } = req.body;
 
-    // const existing = await Ticket.findOne({
-    //   userId,
-    //   project: req.body.project,
-    //   mainStatus: { $ne: "closed" },
-    // });
+    // ✅ Validate required field
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
 
-    if (!userId) return res.status(400).json({ error: "userId is required" });
+    // ✅ Parse handoverHistory if coming as a string (FormData case)
+    if (req.body.handoverHistory && typeof req.body.handoverHistory === "string") {
+      try {
+        req.body.handoverHistory = JSON.parse(req.body.handoverHistory);
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid handoverHistory format" });
+      }
+    }
 
-    // if (existing)
-    //   return res
-    //     .status(409)
-    //     .json({ error: "Ticket already exists for this project/user." });
-
+    // ✅ Handle file uploads (Cloudinary)
     const attachments = Array.isArray(req.files)
       ? req.files.map((file) => ({
-        filename: file.originalname,
-        url: file.path,           // Cloudinary URL
-        public_id: file.filename, // needed for delete
-        mimetype: file.mimetype,
-      }))
+          filename: file.originalname,
+          url: file.path,
+          public_id: file.filename,
+          mimetype: file.mimetype,
+        }))
       : [];
 
+    // ✅ Generate unique ticket number
     const ticketNo = await generateSequenceNumber6Digit();
 
+    // ✅ Determine if this is a handover scenario
     const isHandover =
       mainStatus === "handover" &&
       employeeId &&
       userId &&
       employeeId !== userId;
 
-    const newTicket = new Ticket({
+    // ✅ Build final ticket object
+    const ticketData = {
       ...req.body,
       attachments,
       ticketNo,
       updatedTime: new Date(),
       createdTime: new Date(),
-      ...(isHandover && {
-        handoverHistory: [
-          {
-            fromEmployeeId: userId,
-            toEmployeeId: employeeId,
-            reassignedBy: userId,
-            reassignedAt: new Date(),
-          },
-        ],
-      }),
-    });
+    };
 
-    const saved = await newTicket.save();
+    // If it's a handover and handoverHistory was not provided by frontend
+    if (isHandover && (!req.body.handoverHistory || req.body.handoverHistory.length === 0)) {
+      ticketData.handoverHistory = [
+        {
+          fromEmployeeId: userId,
+          toEmployeeId: employeeId,
+          reassignedBy: userId,
+          reassignedAt: new Date(),
+        },
+      ];
+    }
 
-    res.status(201).json(saved);
+    // ✅ Create and save ticket
+    const newTicket = new Ticket(ticketData);
+    const savedTicket = await newTicket.save();
+
+    res.status(201).json(savedTicket);
   } catch (err) {
-    console.log("Error in createTicket:", err.message);
+    console.error("Error in createTicket:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -150,106 +159,111 @@ exports.getTicketById = async (req, res) => {
   }
 };
 
-//new  updating method for tickets
-exports.updateTicketNew = async (req, res) => {
-  try {
-    const ticketId = req.params.id;
+// new updating method for tickets
+// exports.updateTicketNew = async (req, res) => {
+//   try {
+//     const ticketId = req.params.id;
 
-    // 🔹 Handle new attachments from Cloudinary (multer-storage-cloudinary already uploaded)
-    let newAttachments = [];
-    if (Array.isArray(req.files) && req.files.length > 0) {
-      newAttachments = req.files.map((file) => ({
-        filename: file.originalname,
-        url: file.path,          // Cloudinary public URL
-        public_id: file.filename, // Cloudinary public_id (for delete later)
-        mimetype: file.mimetype,
-      }));
-    }
+//     let newAttachments = [];
+//     if (Array.isArray(req.files) && req.files.length > 0) {
+//       newAttachments = req.files.map((file) => ({
+//         filename: file.originalname,
+//         url: file.path,          // Cloudinary public URL
+//         public_id: file.filename, // Cloudinary public_id (for delete later)
+//         mimetype: file.mimetype,
+//       }));
+//     }
 
-    let updateOps = { $set: { ...req.body } };
+//     let updateOps = { $set: { ...req.body } };
 
-    // Merge existing + new attachments
-    if (req.body.existingAttachments) {
-      try {
-        const existing = JSON.parse(req.body.existingAttachments); // expect array of objects
-        updateOps.$set.attachments = [...existing, ...newAttachments];
-      } catch (e) {
-        console.error("Error parsing existingAttachments:", e);
-      }
-    } else if (newAttachments.length > 0) {
-      // if no existingAttachments were passed, just push new ones
-      updateOps.$push = { attachments: { $each: newAttachments } };
-    }
+//     if (req.body.existingAttachments) {
+//       try {
+//         const existing = JSON.parse(req.body.existingAttachments); 
+//         updateOps.$set.attachments = [...existing, ...newAttachments];
+//       } catch (e) {
+//         console.error("Error parsing existingAttachments:", e);
+//       }
+//     } else if (newAttachments.length > 0) {
+//       updateOps.$push = { attachments: { $each: newAttachments } };
+//     }
 
-    // Handle FormData-based handoverHistory parsing (unchanged)
-    if (req.body['handoverHistory[0].fromEmployeeId']) {
-      const parsedHistory = [];
-      let i = 0;
+//     // Handle FormData-based handoverHistory parsing (unchanged)
+//     if (req.body['handoverHistory[0].fromEmployeeId']) {
+//       const parsedHistory = [];
+//       let i = 0;
 
-      while (req.body[`handoverHistory[${i}].fromEmployeeId`]) {
-        parsedHistory.push({
-          fromEmployeeId: req.body[`handoverHistory[${i}].fromEmployeeId`],
-          toEmployeeId: req.body[`handoverHistory[${i}].toEmployeeId`],
-          reassignedBy: req.body[`handoverHistory[${i}].reassignedBy`],
-          reassignedAt: new Date(req.body[`handoverHistory[${i}].reassignedAt`]),
-        });
-        i++;
-      }
+//       while (req.body[`handoverHistory[${i}].fromEmployeeId`]) {
+//         parsedHistory.push({
+//           fromEmployeeId: req.body[`handoverHistory[${i}].fromEmployeeId`],
+//           toEmployeeId: req.body[`handoverHistory[${i}].toEmployeeId`] || null,
+//           toClientId: req.body[`handoverHistory[${i}].toClientId`] || null,
+//           reassignedBy: req.body[`handoverHistory[${i}].reassignedBy`],
+//           reassignedAt: new Date(req.body[`handoverHistory[${i}].reassignedAt`]),
+//         });
+//         i++;
+//       }
 
-      req.body.handoverHistory = parsedHistory;
+//       req.body.handoverHistory = parsedHistory;
 
-      Object.keys(req.body).forEach((key) => {
-        if (key.startsWith("handoverHistory[")) delete req.body[key];
-      });
-    }
+//       Object.keys(req.body).forEach((key) => {
+//         if (key.startsWith("handoverHistory[")) delete req.body[key];
+//       });
+//     }
 
-    const { mainStatus, employeeId, reassignedBy } = req.body;
+//     const { mainStatus, employeeId, clientId, reassignedBy } = req.body;
 
-    const ticket = await Ticket.findById(ticketId);
-    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+//     const ticket = await Ticket.findById(ticketId);
+//     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
 
-    const isAlreadyClosed = ticket.mainStatus === "closed";
+//     const isAlreadyClosed = ticket.mainStatus === "closed";
+//     if (!isAlreadyClosed) {
+//       updateOps.$set.updatedTime = new Date();
+//     }
 
-    if (!isAlreadyClosed) {
-      updateOps.$set.updatedTime = new Date();
-    }
+//     let pushHandover = null;
 
-    const isHandover =
-      mainStatus === "handover" &&
-      employeeId &&
-      employeeId !== ticket.employeeId;
+//     if (mainStatus === "inProcess") {
+//       // Employee → Employee
+//       pushHandover = {
+//         fromEmployeeId: ticket.employeeId,
+//         toEmployeeId: employeeId,
+//         reassignedBy,
+//         reassignedAt: new Date(),
+//       };
+//     } else if (mainStatus === "handover") {
+//       // Employee → Client
+//       pushHandover = {
+//         fromEmployeeId: ticket.employeeId,
+//         toClientId: clientId,
+//         reassignedBy,
+//         reassignedAt: new Date(),
+//       };
+//     }
 
-    if (isHandover && !req.body.handoverHistory) {
-      delete updateOps.$set.handoverHistory;
+//     if (pushHandover) {
+//       updateOps.$push = {
+//         ...(updateOps.$push || {}),
+//         handoverHistory: pushHandover,
+//       };
+//     }
 
-      updateOps.$push = {
-        ...(updateOps.$push || {}),
-        handoverHistory: {
-          fromEmployeeId: ticket.employeeId,
-          toEmployeeId: employeeId,
-          reassignedBy,
-          reassignedAt: new Date(),
-        },
-      };
-    }
+//     const updatedTicket = await Ticket.findByIdAndUpdate(ticketId, updateOps, {
+//       new: true,
+//       runValidators: true,
+//     });
 
-    const updatedTicket = await Ticket.findByIdAndUpdate(ticketId, updateOps, {
-      new: true,
-      runValidators: true,
-    });
+//     const formattedTicket = {
+//       ...updatedTicket.toObject(),
+//       createdTime: formatDate(updatedTicket.createdTime),
+//       updatedTime: formatDate(updatedTicket.updatedTime),
+//     };
 
-    const formattedTicket = {
-      ...updatedTicket.toObject(),
-      createdTime: formatDate(updatedTicket.createdTime),
-      updatedTime: formatDate(updatedTicket.updatedTime),
-    };
-
-    res.json(formattedTicket);
-  } catch (err) {
-    console.error("Ticket update error:", err);
-    res.status(500).json({ error: err.message });
-  }
-};
+//     res.json(formattedTicket);
+//   } catch (err) {
+//     console.error("Ticket update error:", err);
+//     res.status(500).json({ error: err.message });
+//   }
+// };
 
 
 // Delete Ticket
@@ -413,6 +427,12 @@ exports.getTicketsByEmployeeId = async (req, res) => {
   }
 };
 
+const formatDate = (input) => {
+  const date = new Date(input);
+  if (isNaN(date.getTime())) return null; // Invalid date
+  return date.toISOString(); // Or custom format
+};
+
 exports.getReportTickets = async (req, res) => {
   try {
     const {
@@ -428,11 +448,16 @@ exports.getReportTickets = async (req, res) => {
     const filter = {};
 
     if (fromDate && toDate) {
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
+      to.setHours(23, 59, 59, 999); // include full end day
+    
       filter.createdTime = {
-        $gte: new Date(fromDate).toISOString(),
-        $lte: new Date(toDate).toISOString(),
+        $gte: from,
+        $lte: to,
       };
     }
+    
 
     if (employeeName) {
       filter.employee = { $regex: employeeName, $options: "i" };
@@ -443,19 +468,19 @@ exports.getReportTickets = async (req, res) => {
     }
 
     if (mainStatus) {
-      filter.mainStatus = new RegExp(mainStatus, "i");
+      const cleanedStatus =
+        mainStatus === "In Process" ? "InProcess" : mainStatus;
+      filter.mainStatus = new RegExp(cleanedStatus?.toLowerCase(), "i");
     }
 
     if (ticketNo) {
       filter.ticketNo = { $regex: ticketNo, $options: "i" };
     }
 
-    // if (report) {
-    //   filter.reportType = report;
-    // }
+    console.log("Filter:", filter);
 
     const tickets = await Ticket.find(filter).sort({ createdTime: -1 });
-
+    console.log("TICket s", tickets);
     const formattedTickets = tickets.map((ticket) => ({
       ...ticket.toObject(),
       createdTime: formatDate(ticket.createdTime),
@@ -468,6 +493,7 @@ exports.getReportTickets = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 exports.getTicketsHandedOverByUser = async (req, res) => {
   try {
@@ -509,8 +535,6 @@ exports.deleteAttachment = async (req, res) => {
     const { ticketId, publicId } = req.params;
     const decodedPublicId = decodeURIComponent(publicId);
 
-    console.log("Deleting.", ticketId, "Public Id is", decodedPublicId);
-
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
 
@@ -527,6 +551,96 @@ exports.deleteAttachment = async (req, res) => {
     res.json(updated);
   } catch (err) {
     console.error("Delete attachment error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateTicketNew = async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+
+    let parsedHandoverHistory = [];
+    if (req.body.handoverHistory) {
+      try {
+        parsedHandoverHistory =
+          typeof req.body.handoverHistory === "string"
+            ? JSON.parse(req.body.handoverHistory)
+            : req.body.handoverHistory;
+      } catch (err) {
+        console.error("Error parsing handoverHistory:", err);
+      }
+    }
+
+    // 2️⃣ Build base update
+    const updateOps = {
+      $set: {
+        name: req.body.name,
+        subject: req.body.subject,
+        projectId: req.body.projectId,
+        project: req.body.project,
+        departmentId: req.body.departmentId,
+        department: req.body.department,
+        categoryId: req.body.categoryId,
+        category: req.body.category,
+        priorityId: req.body.priorityId,
+        priority: req.body.priority,
+        employeeId: req.body.employeeId,
+        employee: req.body.employee,
+        issue: req.body.issue,
+        mainStatus: req.body.mainStatus,
+        targetDate: req.body.targetDate,
+        clientId: req.body.clientId,
+        updatedTime: new Date(),
+      },
+    };
+
+    // 3️⃣ Handle attachments
+    let newAttachments = [];
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      newAttachments = req.files.map((file) => ({
+        filename: file.originalname,
+        url: file.path,
+        public_id: file.filename,
+        mimetype: file.mimetype,
+      }));
+    }
+
+    if (req.body.existingAttachments) {
+      try {
+        const existing = JSON.parse(req.body.existingAttachments);
+        updateOps.$set.attachments = [...existing, ...newAttachments];
+      } catch (err) {
+        console.error("Error parsing existingAttachments:", err);
+      }
+    } else if (newAttachments.length > 0) {
+      updateOps.$push = { attachments: { $each: newAttachments } };
+    }
+
+    // 4️⃣ Preserve old handoverHistory if none provided
+    if (parsedHandoverHistory.length > 0) {
+      updateOps.$push = {
+        ...(updateOps.$push || {}),
+        handoverHistory: { $each: parsedHandoverHistory },
+      };
+    } else {
+      console.log("No new handoverHistory provided, keeping existing data intact.");
+    }
+
+    // 5️⃣ Execute update
+    const updatedTicket = await Ticket.findByIdAndUpdate(ticketId, updateOps, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedTicket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    // 6️⃣ Return response
+    res.json(updatedTicket);
+
+  } catch (err) {
+    console.error("Ticket update error:", err);
     res.status(500).json({ error: err.message });
   }
 };

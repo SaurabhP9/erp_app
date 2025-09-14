@@ -19,6 +19,14 @@ const ticketSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  clientId: {
+    type: String, // Assigned to (client _id)
+    default: null,
+  },
+  client: {
+    type: String,
+    default: null,
+  },
   project: {
     type: String,
     required: true,
@@ -61,29 +69,31 @@ const ticketSchema = new mongoose.Schema({
   },
   handoverHistory: [
     {
-      fromEmployeeId: String,
-      toEmployeeId: String,
-      reassignedBy: String,
+      fromEmployeeId: { type: String },
+      toEmployeeId: { type: String },
+      toClientId: { type: String },
+      reassignedBy: { type: String },
       reassignedAt: { type: Date, default: Date.now },
     },
   ],
-  attachments: [
-    {
-      filename: { type: String },   // original file name
-      url: { type: String },        // Cloudinary URL
-      public_id: { type: String },  // Cloudinary public_id
-      mimetype: { type: String },
-    },
-  ],
+  attachments: {
+    type: [
+      {
+        filename: String,   // original file name
+        url: String,        // Cloudinary URL
+        public_id: String,  // Cloudinary public_id
+        mimetype: String,
+      },
+    ],
+    default: [], // ensures attachments is always an array
+  },  
   mainStatus: {
-    type: String,
-    enum: ["open", "inProcess", "closed", "handover", "working"],
-    default: "open",
+    type: String
   },
   createdBy: String,
-  createdTime: { type: String, default: () => new Date().toISOString() },
+  createdTime: { type: Date, default: Date.now },
   updatedBy: String,
-  updatedTime: { type: String, default: () => new Date().toISOString() },
+  updatedTime: { type: Date, default: Date.now },
 });
 
 ticketSchema.index({ userId: 1 });
