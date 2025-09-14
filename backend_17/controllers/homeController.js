@@ -6,7 +6,7 @@ exports.getHomeSummary = async (req, res) => {
     const ticketSummaryData = await Ticket.aggregate([
       {
         $group: {
-          _id: "$mainStatus",
+          _id: { $toLower: { $trim: { input: "$mainStatus" } } },
           count: { $sum: 1 },
         },
       },
@@ -238,7 +238,7 @@ exports.getEmployeeTicketSummary = async (req, res) => {
 
       /** ---------- Handover Count ---------- */
       if (Array.isArray(t.handoverHistory) && t.handoverHistory.some(
-          (h) => h.fromEmployeeId?.toString() === employeeId)) {
+        (h) => h.fromEmployeeId?.toString() === employeeId)) {
         stats.handover++;
       }
     });

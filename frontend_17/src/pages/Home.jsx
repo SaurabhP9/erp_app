@@ -53,7 +53,6 @@ export default function Home() {
         } else {
           setRoleBasedSummary([]);
         }
-        console.log("role based summary ", roleBaseSummary);
       } catch (err) {
         console.error("Failed to fetch home summary:", err);
       }
