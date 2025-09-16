@@ -12,7 +12,7 @@ router.get("/daily-timesheet-emails/v1", async (req, res) => {
    const res = await triggerEmailForEmployeeTimeSheet();
     res.send("✅ Timesheet emails sent", res);
   } catch (err) {
-    res.status(500).send("❌ Failed to send emails");
+    res.status(500).send("❌ Failed to send emails", err);
   }
 });
 

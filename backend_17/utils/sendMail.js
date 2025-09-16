@@ -19,7 +19,7 @@ module.exports = async function sendEmail(to, subject, text, html, cc) {
 
   try {
     const result = await sgMail.send(msg);
-    console.log('✅ Email sent via SendGrid API');
+    console.log('✅ Email sent via SendGrid API', result);
     return result;
   } catch (error) {
     console.error('❌ SendGrid API error:', error.response?.body || error.message);
