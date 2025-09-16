@@ -1,36 +1,28 @@
 // services/sendEmail.js
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.sendgrid.net',
-  port: 587,
-  secure: false,
-  auth: {
-    user: 'apikey', // literally this string
-    pass: process.env.SENDGRID_API_KEY,
-  },
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
- * Sends an email using SendGrid + Nodemailer
+ * Sends an email using SendGrid's Web API (not SMTP)
  */
-module.exports =  async function sendEmail(to, subject, text, html, cc) {
-  const mailOptions = {
-    from: process.env.EMAIL_USER, // ✅ Must be verified in SendGrid
+
+module.exports = async function sendEmail(to, subject, text, html, cc) {
+  const msg = {
     to,
+    from: process.env.EMAIL_USER, // Must be verified in SendGrid
     subject,
     text,
     html,
+    cc,
   };
 
-  if (cc) mailOptions.cc = cc;
-
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent:', info.response);
-    return info;
+    const result = await sgMail.send(msg);
+    console.log('✅ Email sent via SendGrid API');
+    return result;
   } catch (error) {
-    console.error('❌ Error sending email:', error);
+    console.error('❌ SendGrid API error:', error.response?.body || error.message);
     throw error;
   }
-}
+};
