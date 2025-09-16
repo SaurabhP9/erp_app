@@ -949,7 +949,8 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
       "yogesh.kale@clickerpservices.com",
       "prasad.chilwar@clickerpservices.com",
     ];
-    await sendEmail(toEmail, subject, plainText, html, ccEmails);
+    
+    return await sendEmail(toEmail, subject, plainText, html, ccEmails);
   } catch (err) {
     console.error("Error sending consolidated timesheet email:", err);
     throw err;
