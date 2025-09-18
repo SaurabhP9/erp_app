@@ -2007,7 +2007,7 @@ export default function MyTimesheet() {
               <Autocomplete
                 options={tickets}
                 getOptionLabel={(option) =>
-                  `${option.ticketNo} - ${option.subject}`
+                  `${option.ticketNo} - ${option.name}`
                 }
                 value={tickets.find((t) => t._id === formData.ticket) || null}
                 onChange={(e, newValue) => {
