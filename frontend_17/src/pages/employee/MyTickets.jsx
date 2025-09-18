@@ -1106,7 +1106,7 @@ const E_Ticket = () => {
                       {[
                         "#",
                         "Ticket Id",
-                        "Subject",
+                        "Assined By ",
                         "Project",
                         "Issue",
                         "Submitted Time",
