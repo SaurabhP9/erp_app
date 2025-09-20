@@ -25,9 +25,8 @@ import { sendTicketEmail } from "../../api/emailApi";
 import {
   createTicket,
   getAllTickets,
-  getTicketsByEmployeeId,
   updateTicket,
-  deleteTicket, // Added deleteTicket import
+  deleteTicket,
 } from "../../api/ticketApi";
 import {
   getAllProjects,
@@ -50,11 +49,11 @@ import { BASE_URL } from "../../api/api";
 /* —————————————————————————————————————————————————— */
 /* INITIAL STATE                                                                  */
 /* —————————————————————————————————————————————————— */
-const username = localStorage.getItem("username");
+const username = localStorage.getItem("username") || "";
 
 const initialFormData = {
-  name: "",
-  subject: "",
+  name: "", // ticket title
+  subject: "", // ticket creator / short subject
   projectId: "",
   project: "",
   departmentId: "",
@@ -97,15 +96,16 @@ const Client_Ticket = () => {
   const [editedCommentText, setEditedCommentText] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // New: State for submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Call inside useEffect when ticket is viewed
+  // Fetch comments when a ticket is viewed
   useEffect(() => {
-    if (viewTicket) {
+    if (viewTicket?._id) {
       fetchComments(viewTicket._id);
     }
   }, [viewTicket]);
 
+  // Initial load: tickets + dropdowns + users
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -120,77 +120,88 @@ const Client_Ticket = () => {
 
         const userId = localStorage.getItem("userId");
 
-        const createdTickets = ticketData.filter((t) => t.userId === userId);
+        // Filter tickets created by current user (safe guard if ticketData undefined)
+        const createdTickets = Array.isArray(ticketData)
+          ? ticketData.filter((t) => t.userId === userId)
+          : [];
 
         setTickets(createdTickets);
-        // setDepartments(dept);
+
         // Filter to only "functional" departments
-        const functionalDepartments = dept.filter((d) =>
-          d.department?.toLowerCase().includes("functional")
-        );
+        const functionalDepartments = Array.isArray(dept)
+          ? dept.filter((d) =>
+            (d.department || "").toLowerCase().includes("functional")
+          )
+          : [];
 
-        setDepartments(functionalDepartments);
+        setDepartments(functionalDepartments.length ? functionalDepartments : (Array.isArray(dept) ? dept : []));
 
-        // Auto-select department if exactly one functional exists
+        // Auto-select department if exactly one functional exists (only when not editing)
         if (!editMode && functionalDepartments.length === 1) {
           const oneDept = functionalDepartments[0];
           setFormData((prev) => ({
             ...prev,
-            departmentId: oneDept._id,
-            department: oneDept.department,
+            departmentId: oneDept._id || "",
+            department: oneDept.department || "",
           }));
         }
 
-        setCategories(cat);
-        setPriorities(prio);
+        setCategories(Array.isArray(cat) ? cat : []);
+        setPriorities(Array.isArray(prio) ? prio : []);
 
-        // Filter functional (non-technical) employees only
+        // Filter functional (non-technical) employees only and those belonging to project (based on username)
+        const allEmployees = Array.isArray(emp) ? emp : [];
         const isFunctional = (e) => {
-          const dept = e.department?.toLowerCase() || "";
-          return dept.includes("functional");
+          const deptName = (e.department || "").toLowerCase();
+          return deptName.includes("functional");
         };
 
-        const filteredFunctional = emp.filter((e) => {
-          const hasProject = e.projects?.some(
-            (proj) =>
-              (proj?.toLowerCase()?.trim() || "") ===
-              (username?.toLowerCase()?.trim() || "")
-          );
+        const filteredFunctional = allEmployees.filter((e) => {
+          const hasProject = Array.isArray(e.projects)
+            ? e.projects.some(
+              (p) =>
+                (p || "").toLowerCase().trim() ===
+                (username || "").toLowerCase().trim()
+            )
+            : false;
           const functional = isFunctional(e);
           return hasProject && functional;
         });
 
-        filteredFunctional.length > 0
-          ? setEmployees(filteredFunctional)
-          : setEmployees(emp);
+        setEmployees(
+          filteredFunctional.length > 0 ? filteredFunctional : allEmployees
+        );
 
-        // Auto-select only functional member in Add mode
+        // Auto-select employee if exactly one functional exists (only when not editing)
         if (!editMode && filteredFunctional.length === 1) {
           const oneEmp = filteredFunctional[0];
           setFormData((prev) => ({
             ...prev,
-            employeeId: oneEmp._id,
-            employee: oneEmp.name,
+            employeeId: oneEmp._id || "",
+            employee: oneEmp.name || "",
           }));
         }
-        // filter project
-        const finalProjects = proj.filter((project) =>
-          username.includes(project.project)
+
+        // Projects filtered by username (safe guards)
+        const allProjects = Array.isArray(proj) ? proj : [];
+        const finalProjects = allProjects.filter((p) =>
+          (username || "").includes(p.project || "")
         );
-        setProjects(finalProjects);
+        setProjects(finalProjects.length ? finalProjects : allProjects);
       } catch (err) {
         console.error("Error loading data:", err);
       }
     };
     fetchAll();
+    // intentionally not adding formData/editMode etc to deps to avoid refetch loops
+    // if you want dynamic behavior when editMode changes, add it here.
   }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
     if (name === "attachments") {
-      const newFiles = Array.from(files);
-
+      const newFiles = Array.from(files || []);
       setFormData((prev) => ({
         ...prev,
         attachments: [...(prev.attachments || []), ...newFiles],
@@ -249,26 +260,47 @@ const Client_Ticket = () => {
     e.preventDefault();
 
     if (isSubmitting) return;
-
-    setIsSubmitting(true); // ✅ Lock before API call
-
-    const form = new FormData();
-
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === "attachments") {
-        value.forEach((file) => form.append("attachments", file));
-      } else {
-        form.append(key, value);
-      }
-    });
-
-    if (!editMode) {
-      form.append("userId", localStorage.getItem("userId"));
-    }
+    setIsSubmitting(true);
 
     try {
+      const form = new FormData();
+
+      // Append scalar values as strings
+      const scalarKeys = [
+        "name",
+        "subject",
+        "projectId",
+        "project",
+        "departmentId",
+        "department",
+        "categoryId",
+        "category",
+        "priorityId",
+        "priority",
+        "employeeId",
+        "employee",
+        "issue",
+        "mainStatus",
+      ];
+
+      scalarKeys.forEach((k) => {
+        const v = formData[k];
+        if (v !== undefined && v !== null) form.append(k, String(v));
+      });
+
+      // attachments (if any)
+      if (Array.isArray(formData.attachments) && formData.attachments.length) {
+        formData.attachments.forEach((file) => form.append("attachments", file));
+      }
+
+      // userId only when creating new ticket
+      if (!editMode) {
+        const uid = localStorage.getItem("userId");
+        if (uid) form.append("userId", uid);
+      }
+
       let createdOrUpdated;
-      if (editMode) {
+      if (editMode && editId) {
         createdOrUpdated = await updateTicket(editId, form);
         setTickets((prev) =>
           prev.map((t) => (t._id === editId ? createdOrUpdated : t))
@@ -278,17 +310,22 @@ const Client_Ticket = () => {
         setTickets((prev) => [...prev, createdOrUpdated]);
       }
 
+      // reset form & close
       setFormData(initialFormData);
       setShowForm(false);
       setEditMode(false);
       setEditId(null);
+
+      // optionally send emails:
+      // if (createdOrUpdated?.userEmail) await sendEmailToClient(createdOrUpdated, createdOrUpdated.userEmail);
+
     } catch (err) {
       console.error("Submit failed:", err);
     } finally {
-      setIsSubmitting(false); // Always release lock
+      setIsSubmitting(false);
     }
-    window.location.reload();
   };
+
 
   async function sendEmailToClient(createdOrUpdated, email) {
     const ticketNumber = createdOrUpdated.ticketNo || createdOrUpdated._id;
@@ -412,20 +449,21 @@ const Client_Ticket = () => {
 
   const handleEdit = (ticket) => {
     setFormData({
-      name: ticket.name,
-      subject: ticket.subject,
-      projectId: ticket.projectId,
-      project: ticket.project,
-      departmentId: ticket.departmentId,
-      department: ticket.department,
-      categoryId: ticket.categoryId,
-      category: ticket.category,
-      priorityId: ticket.priorityId,
-      priority: ticket.priority,
-      issue: ticket.issue,
-      employeeId: ticket.employeeId,
-      employee: ticket.employee,
-      attachments: [],
+      name: ticket.name || "",
+      subject: ticket.subject || "",
+      projectId: ticket.projectId || "",
+      project: ticket.project || (projects[0]?.project || ""),
+      departmentId: ticket.departmentId || "",
+      department: ticket.department || "",
+      categoryId: ticket.categoryId || "",
+      category: ticket.category || "",
+      priorityId: ticket.priorityId || "",
+      priority: ticket.priority || "",
+      issue: ticket.issue || "",
+      employeeId: ticket.employeeId || "",
+      employee: ticket.employee || "",
+      attachments: [], // attachments re-uploaded if needed
+      mainStatus: ticket.mainStatus || "open",
     });
     setEditMode(true);
     setEditId(ticket._id);
@@ -435,17 +473,29 @@ const Client_Ticket = () => {
   const handleDelete = async (id) => {
     try {
       await deleteTicket(id);
-      setTickets(tickets.filter((t) => t._id !== id));
+      setTickets((prev) => prev.filter((t) => t._id !== id));
     } catch (err) {
       console.error("Delete failed:", err);
     }
   };
 
   const handleView = (ticket) => {
-    setViewTicket(ticket);
+    // normalize viewTicket dates for display
+    setViewTicket({
+      ...ticket,
+      submittedTime:
+        ticket.createdTime && dayjs(ticket.createdTime).isValid()
+          ? dayjs(ticket.createdTime).format("DD-MMM-YYYY")
+          : ticket.submittedTime || "",
+      lastUpdated:
+        ticket.updatedTime && dayjs(ticket.updatedTime).isValid()
+          ? dayjs(ticket.updatedTime).format("DD-MMM-YYYY")
+          : ticket.lastUpdated || "",
+    });
   };
 
   const submitComment = async () => {
+    if (!viewTicket?._id) return;
     try {
       const res = await createComment({
         ticketId: viewTicket._id,
@@ -453,7 +503,7 @@ const Client_Ticket = () => {
         comment: newComment,
         userName: username,
       });
-      setComments([...comments, res]);
+      setComments((prev) => [...prev, res]);
       setNewComment("");
     } catch (err) {
       console.error("Failed to post comment:", err);
@@ -463,18 +513,16 @@ const Client_Ticket = () => {
   const handleReaction = async (commentId, type) => {
     try {
       const updated = await reactToComment(commentId, type);
-
-      setComments((prev) =>
-        prev.map((c) => (c._id === commentId ? updated : c))
-      );
+      setComments((prev) => prev.map((c) => (c._id === commentId ? updated : c)));
     } catch (err) {
       console.error("Reaction failed:", err);
     }
   };
+
   const fetchComments = async (ticketId) => {
     try {
       const data = await getCommentsByTicket(ticketId);
-      setComments(data);
+      setComments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error fetching comments:", err);
     }
@@ -492,20 +540,20 @@ const Client_Ticket = () => {
   const handleUpdateComment = async (commentId) => {
     try {
       const updated = await updateComment(commentId, editedCommentText);
-      setComments((prev) =>
-        prev.map((c) => (c._id === commentId ? updated : c))
-      );
+      setComments((prev) => prev.map((c) => (c._id === commentId ? updated : c)));
       setEditingCommentId(null);
+      setEditedCommentText("");
     } catch (err) {
       console.error("Error updating comment:", err);
     }
   };
+
   const filteredTickets = tickets.filter((ticket) => {
-    const name = ticket.name?.toLowerCase() || "";
-    const subject = ticket.subject?.toLowerCase() || "";
-    const project = ticket.project?.toLowerCase() || "";
-    const issue = ticket.issue?.toLowerCase() || "";
-    const search = searchTerm?.toLowerCase() || "";
+    const name = (ticket.name || "").toLowerCase();
+    const subject = (ticket.subject || "").toLowerCase();
+    const project = (ticket.project || "").toLowerCase();
+    const issue = (ticket.issue || "").toLowerCase();
+    const search = (searchTerm || "").toLowerCase();
 
     return (
       name.includes(search) ||
@@ -516,7 +564,8 @@ const Client_Ticket = () => {
   });
 
   const sortedTickets = [...filteredTickets].sort(
-    (a, b) => dayjs(b.createdTime).valueOf() - dayjs(a.createdTime).valueOf()
+    (a, b) =>
+      (dayjs(b.createdTime).valueOf() || 0) - (dayjs(a.createdTime).valueOf() || 0)
   );
 
   /* —————————————————————————————————————————————————— */
@@ -536,10 +585,10 @@ const Client_Ticket = () => {
             <Button
               variant="contained"
               onClick={() => {
-                setFormData({
+                setFormData((prev) => ({
                   ...initialFormData,
                   project: projects.length > 0 ? projects[0].project : "",
-                });
+                }));
 
                 setEditMode(false);
                 setEditId(null);
@@ -562,7 +611,7 @@ const Client_Ticket = () => {
 
           <Paper
             sx={{
-              height: "calc(100vh - 470px)", // adjust if needed
+              height: "calc(100vh - 470px)",
               display: "flex",
               flexDirection: "column",
               backgroundColor: "#f9f9f9",
@@ -579,7 +628,6 @@ const Client_Ticket = () => {
                       "Ticket",
                       "Assigned By",
                       "Project",
-                      // "Issue",
                       "Submitted Time",
                       "Last Updated",
                       "Status",
@@ -604,7 +652,7 @@ const Client_Ticket = () => {
                 <TableBody>
                   {sortedTickets.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center" sx={{ border: 1 }}>
+                      <TableCell colSpan={9} align="center" sx={{ border: 1 }}>
                         No tickets available.
                       </TableCell>
                     </TableRow>
@@ -620,26 +668,16 @@ const Client_Ticket = () => {
                         }}
                       >
                         <TableCell sx={{ border: 1 }}>{index + 1}</TableCell>
-                        {/* <TableCell
-                          style={{
-                            border: 1,
-                            cursor: "pointer",
-                            textDecoration: "underline",
-                          }}
-                          onClick={() => handleView(ticket)}
-                        >
-                          {ticket.ticketNo}
-                        </TableCell> */}
                         <TableCell
                           style={{
                             border: 1,
-                            borderBottom: "1px solid rgba(224, 224, 224, 1)", // Add this line
+                            borderBottom: "1px solid rgba(224, 224, 224, 1)",
                             cursor: "pointer",
                             textDecoration: "underline",
                           }}
                           onClick={() => handleView(ticket)}
                         >
-                          {ticket.ticketNo}
+                          {ticket.ticketNo || ticket._id}
                         </TableCell>
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
                           {ticket.name}
@@ -650,14 +688,15 @@ const Client_Ticket = () => {
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
                           {ticket.project}
                         </TableCell>
-                        {/* <TableCell sx={{ border: 1, textAlign: "center" }}>
-                          {ticket.issue}
-                        </TableCell> */}
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
-                          {dayjs(ticket.createdTime).format("DD‑MMM‑YYYY ")}
+                          {ticket.createdTime
+                            ? dayjs(ticket.createdTime).format("DD-MMM-YYYY")
+                            : ""}
                         </TableCell>
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
-                          {dayjs(ticket.updatedTime).format("DD‑MMM‑YYYY ")}
+                          {ticket.updatedTime
+                            ? dayjs(ticket.updatedTime).format("DD-MMM-YYYY")
+                            : ""}
                         </TableCell>
                         <TableCell sx={{ border: 1, textAlign: "center" }}>
                           {ticket.mainStatus}
@@ -670,15 +709,6 @@ const Client_Ticket = () => {
                           >
                             Edit
                           </Button>
-                          {/* <Button
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            onClick={() => handleDelete(ticket._id)}
-                            sx={{ ml: 1 }}
-                          >
-                            Delete
-                          </Button> */}
                         </TableCell>
                       </TableRow>
                     ))
@@ -695,7 +725,7 @@ const Client_Ticket = () => {
           sx={{
             flexGrow: 1,
             overflowY: "auto",
-            height: "calc(100vh - 220px)", // adjust height as per your header height
+            height: "calc(100vh - 220px)",
             px: 3,
           }}
         >
@@ -721,11 +751,11 @@ const Client_Ticket = () => {
                     <TextField
                       fullWidth
                       required
-                      label="Ticket Subject"
+                      label="Ticket Title"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      disabled={editMode}
+                      disabled={false}
                     />
                   </Grid>
 
@@ -733,11 +763,11 @@ const Client_Ticket = () => {
                     <TextField
                       fullWidth
                       required
-                      label="Ticket Creator Name"
+                      label="Ticket Creator / Short Subject"
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
-                      disabled={editMode}
+                      disabled={false}
                     />
                   </Grid>
 
@@ -746,7 +776,10 @@ const Client_Ticket = () => {
                       fullWidth
                       label="Project"
                       name="project"
-                      value={projects.length > 0 ? projects[0].project : ""}
+                      value={
+                        formData.project ||
+                        (projects.length > 0 ? projects[0].project : "")
+                      }
                       disabled
                     />
                   </Grid>
@@ -760,7 +793,6 @@ const Client_Ticket = () => {
                       name="categoryId"
                       value={formData.categoryId}
                       onChange={handleChange}
-                      disabled={editMode}
                     >
                       <MenuItem value="">Select</MenuItem>
                       {categories.map((cat) => (
@@ -776,8 +808,10 @@ const Client_Ticket = () => {
                       fullWidth
                       label="Department"
                       name="department"
-                      value={departments[0].department}
-                      disabled={true}
+                      value={
+                        formData.department || departments[0]?.department || ""
+                      }
+                      disabled
                     />
                   </Grid>
 
@@ -790,7 +824,6 @@ const Client_Ticket = () => {
                       name="priorityId"
                       value={formData.priorityId}
                       onChange={handleChange}
-                      disabled={editMode}
                     >
                       <MenuItem value="">Select</MenuItem>
                       {priorities.map((pri) => (
@@ -814,29 +847,21 @@ const Client_Ticket = () => {
                       <MenuItem value="">Select</MenuItem>
                       <MenuItem value="open">Open</MenuItem>
                       <MenuItem value="closed">Closed</MenuItem>
+                      <MenuItem value="handover">Reassign</MenuItem>
                     </TextField>
                   </Grid>
 
                   <Grid>
                     <TextField
-                      select
+                      label="Employee ID"
+                      name="employeeId"
+                      value={formData.employee}
+                      onChange={handleChange}
                       fullWidth
                       required
-                      label="Employee"
-                      name="employeeId"
-                      value={formData.employeeId}
-                      onChange={handleChange}
-                      disabled={editMode}
-                    >
-                      <MenuItem value="">Select</MenuItem>
-                      {employees.map((emp) => (
-                        <MenuItem key={emp._id} value={emp._id}>
-                          {emp.name}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      disabled={editMode} // Keep previous disabling logic
+                    />
                   </Grid>
-
                   <Grid>
                     <TextField
                       fullWidth
@@ -861,13 +886,14 @@ const Client_Ticket = () => {
                       multiple
                       onChange={handleChange}
                     />
-                    {formData.attachments.length > 0 && (
-                      <List>
-                        {formData.attachments.map((file, i) => (
-                          <ListItem key={i}>{file.name}</ListItem>
-                        ))}
-                      </List>
-                    )}
+                    {Array.isArray(formData.attachments) &&
+                      formData.attachments.length > 0 && (
+                        <List>
+                          {formData.attachments.map((file, i) => (
+                            <ListItem key={i}>{file.name}</ListItem>
+                          ))}
+                        </List>
+                      )}
                   </Grid>
 
                   <Grid>
@@ -880,17 +906,15 @@ const Client_Ticket = () => {
                           isSubmitting ? <CircularProgress size={20} /> : null
                         }
                       >
-                        {isSubmitting
-                          ? editMode
-                            ? "Updating..."
-                            : "Creating..."
-                          : editMode
-                          ? "Update"
-                          : "Submit"}
+                        {isSubmitting ? (editMode ? "Updating..." : "Creating...") : editMode ? "Update" : "Submit"}
                       </Button>
                       <Button
                         variant="outlined"
-                        onClick={() => setShowForm(false)}
+                        onClick={() => {
+                          setShowForm(false);
+                          setEditMode(false);
+                          setEditId(null);
+                        }}
                       >
                         Back
                       </Button>
@@ -902,6 +926,7 @@ const Client_Ticket = () => {
           </Box>
         </Box>
       )}
+
       {viewTicket && (
         <Box
           sx={{
@@ -915,20 +940,19 @@ const Client_Ticket = () => {
             <Paper
               sx={{
                 p: 3,
-                position: "relative", // ✅ important
+                position: "relative",
                 border: "3px solid #ddd",
                 backgroundColor: "#fdf8e4",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                 borderRadius: 2,
               }}
             >
-              {/* Header */}
               <Box
                 sx={{
                   position: "fixed",
-                  top: 130, // ⬅️ places it above the 2.5cm strip
-                  right: 390, // ⬅️ optional: align to right side instead of center
-                  zIndex: 1300, // ⬅️ higher than strip and header
+                  top: 130,
+                  right: 390,
+                  zIndex: 1300,
                 }}
               >
                 <Button
@@ -945,29 +969,16 @@ const Client_Ticket = () => {
                   ⬅ BACK
                 </Button>
               </Box>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={1}
-              >
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <Typography variant="h5" fontWeight="bold">
-                  Ticket - {viewTicket.ticketNo} - {viewTicket.subject}
+                  Ticket - {viewTicket.ticketNo || viewTicket._id} - {viewTicket.subject}
                 </Typography>
               </Box>
 
-              {/* Meta info */}
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-                sx={{ fontSize: "0.75rem", mb: 2 }}
-              >
-                Added by {viewTicket.createdBy?.name || "User"} • Updated{" "}
-                {viewTicket.lastUpdated}
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: "0.75rem", mb: 2 }}>
+                Added by {viewTicket.createdBy?.name || "User"} • Updated {viewTicket.lastUpdated || viewTicket.updatedTime || ""}
               </Typography>
 
-              {/* Detail Layout */}
               <Box sx={{ display: "flex", flexWrap: "wrap" }}>
                 <Box sx={{ width: "50%", mb: 1 }}>
                   <Typography sx={{ fontSize: "0.9rem" }}>
@@ -982,8 +993,7 @@ const Client_Ticket = () => {
 
                 <Box sx={{ width: "50%", mb: 1 }}>
                   <Typography sx={{ fontSize: "0.9rem" }}>
-                    <strong>Assignee:</strong>{" "}
-                    {viewTicket.employee || "Not Assigned"}
+                    <strong>Assignee:</strong> {viewTicket.employee || "Not Assigned"}
                   </Typography>
                 </Box>
                 <Box sx={{ width: "50%", mb: 1 }}>
@@ -999,7 +1009,7 @@ const Client_Ticket = () => {
                 </Box>
                 <Box sx={{ width: "50%", mb: 1 }}>
                   <Typography sx={{ fontSize: "0.9rem" }}>
-                    <strong>Submitted:</strong> {viewTicket.submittedTime}
+                    <strong>Submitted:</strong> {viewTicket.submittedTime || viewTicket.createdTime}
                   </Typography>
                 </Box>
 
@@ -1007,35 +1017,20 @@ const Client_Ticket = () => {
                   <Typography sx={{ fontSize: "0.9rem", mb: 0.5 }}>
                     <strong>Description:</strong>
                   </Typography>
-                  {/* <Typography
-                    sx={{ fontSize: "0.9rem" }}
-                    color="text.secondary"
-                  >
-                    {viewTicket.issue}
-                  </Typography> */}
-                  <Typography
-                    sx={{ fontSize: "0.9rem", whiteSpace: "pre-line" }}
-                    color="text.secondary"
-                  >
+                  <Typography sx={{ fontSize: "0.9rem", whiteSpace: "pre-line" }} color="text.secondary">
                     {viewTicket.issue}
                   </Typography>
                 </Box>
               </Box>
 
-              {/* Attachments */}
               <Box mt={4}>
                 <Typography variant="subtitle1" fontWeight="bold" mb={1}>
                   📎 Attachments
                 </Typography>
-                {viewTicket.attachments?.length > 0 ? (
+                {Array.isArray(viewTicket.attachments) && viewTicket.attachments.length > 0 ? (
                   viewTicket.attachments.map((file, i) => (
                     <Box key={i} sx={{ mb: 0.5 }}>
-                      <a
-                        href={`${BASE_URL}/${file.path}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ textDecoration: "none", color: "#1976d2" }}
-                      >
+                      <a href={`${BASE_URL}/${file.path}`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", color: "#1976d2" }}>
                         📄 {file.filename}
                       </a>
                     </Box>
@@ -1045,105 +1040,35 @@ const Client_Ticket = () => {
                 )}
               </Box>
 
-              {/* Comments Section */}
               <Box mt={5}>
                 <Typography variant="h6" fontWeight="bold" mb={2}>
                   💬 Discussion
                 </Typography>
                 {comments.map((c) => (
                   <Paper key={c._id} sx={{ p: 2, mt: 2 }}>
-                    <Typography fontWeight="bold">{c.userId?.name}</Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ fontSize: "0.75rem", color: "#888" }}
-                    >
+                    <Typography fontWeight="bold">{c.userId?.name || c.userName}</Typography>
+                    <Typography variant="caption" sx={{ fontSize: "0.75rem", color: "#888" }}>
                       {new Date(c.updatedAt || c.createdAt).toLocaleString()}
                     </Typography>
+
                     {editingCommentId === c._id ? (
                       <Box>
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={2}
-                          value={editedCommentText}
-                          onChange={(e) => setEditedCommentText(e.target.value)}
-                          sx={{ mt: 1 }}
-                        />
-                        <Button
-                          size="small"
-                          onClick={() => handleUpdateComment(c._id)}
-                          sx={{ mt: 1, mr: 1 }}
-                        >
+                        <TextField fullWidth multiline rows={2} value={editedCommentText} onChange={(e) => setEditedCommentText(e.target.value)} sx={{ mt: 1 }} />
+                        <Button size="small" onClick={() => handleUpdateComment(c._id)} sx={{ mt: 1, mr: 1 }}>
                           Save
                         </Button>
-                        <Button
-                          size="small"
-                          onClick={() => setEditingCommentId(null)}
-                          sx={{ mt: 1 }}
-                        >
+                        <Button size="small" onClick={() => setEditingCommentId(null)} sx={{ mt: 1 }}>
                           Cancel
                         </Button>
                       </Box>
                     ) : (
-                      // <Typography sx={{ mt: 1 }}>{c.comment}</Typography>
-                      <Typography
-                        sx={{ mt: 1, whiteSpace: "pre-line" }} // ✅ preserves line breaks
-                      >
-                        {c.comment}
-                      </Typography>
+                      <Typography sx={{ mt: 1, whiteSpace: "pre-line" }}>{c.comment}</Typography>
                     )}
-                    {/* <Box sx={{ mt: 1 }}>
-                      <Button
-                        size="small"
-                        onClick={() => handleReaction(c._id, "like")}
-                      >
-                        👍 {c.reactions?.likes || 0}
-                      </Button>
-                      <Button
-                        size="small"
-                        onClick={() => handleReaction(c._id, "dislike")}
-                      >
-                        👎 {c.reactions?.dislikes || 0}
-                      </Button>
-                      {c.userId?._id === localStorage.getItem("userId") && (
-                        <>
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              setEditingCommentId(c._id);
-                              setEditedCommentText(c.comment);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteComment(c._id)}
-                          >
-                            Delete
-                          </Button>
-                        </>
-                      )}
-                    </Box> */}
                   </Paper>
                 ))}
 
-                {/* Add New Comment */}
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  sx={{ mt: 2 }}
-                />
-                <Button
-                  variant="contained"
-                  sx={{ mt: 1 }}
-                  onClick={submitComment}
-                >
+                <TextField fullWidth multiline rows={3} placeholder="Add a comment..." value={newComment} onChange={(e) => setNewComment(e.target.value)} sx={{ mt: 2 }} />
+                <Button variant="contained" sx={{ mt: 1 }} onClick={submitComment}>
                   Post Comment
                 </Button>
               </Box>
