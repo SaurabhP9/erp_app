@@ -18,6 +18,9 @@ import {
   TableHead,
   TableRow,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select
 } from "@mui/material";
 
 import { sendTicketEmail } from "../../api/emailApi";
@@ -104,6 +107,17 @@ const Client_Ticket = () => {
       fetchComments(viewTicket._id);
     }
   }, [viewTicket]);
+
+  useEffect(() => {
+    if (!editMode && employees.length === 1) {
+      const oneEmp = employees[0];
+      setFormData((prev) => ({
+        ...prev,
+        employeeId: oneEmp._id,
+        employee: oneEmp.name,
+      }));
+    }
+  }, [employees, editMode]);
 
   // Initial load: tickets + dropdowns + users
   useEffect(() => {
@@ -240,7 +254,7 @@ const Client_Ticket = () => {
     }
 
     if (name === "employeeId") {
-      const selected = employees.find((e) => e._id === value);
+      const selected = employees.find((emp) => emp._id === value);
       setFormData((prev) => ({
         ...prev,
         employeeId: selected?._id || "",
@@ -385,41 +399,32 @@ const Client_Ticket = () => {
     const htmlContent = `
     <div style="background-color: #fdf8e4; padding: 40px 0;">
       <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-        <p style="font-size: 16px;">Dear ${
-          assignedEmployee?.name || "Team"
-        },</p>
+        <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
+      },</p>
 
         <p style="font-size: 15px;">
-          ${
-            isEdit
-              ? "The following ticket has been updated"
-              : "A new ticket has been assigned to you"
-          }. Please review the details below and take appropriate action.
+          ${isEdit
+        ? "The following ticket has been updated"
+        : "A new ticket has been assigned to you"
+      }. Please review the details below and take appropriate action.
         </p>
 
         <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
         <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-          <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.name
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.subject
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.project
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.category
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.priority
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.issue
-          }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
-            createdOrUpdated.mainStatus || "Open"
-          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
+      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
+      }</td></tr>
         </table>
 
         <div style="margin-top: 30px; text-align: center;">
@@ -440,9 +445,8 @@ const Client_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
-        createdOrUpdated.name
-      }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
+        }`,
       html: htmlContent,
     });
   }
@@ -850,18 +854,36 @@ const Client_Ticket = () => {
                       <MenuItem value="handover">Reassign</MenuItem>
                     </TextField>
                   </Grid>
-
-                  <Grid>
-                    <TextField
-                      label="Employee ID"
-                      name="employeeId"
-                      value={formData.employee}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                      disabled={editMode} // Keep previous disabling logic
-                    />
+                  <Grid item xs={12} sm={6}>
+                    {editMode ? (
+                      // When editing → show read-only text field with employee name
+                      <TextField
+                        label="Employee"
+                        name="employee"
+                        value={formData.employee || ""}
+                        fullWidth
+                        required
+                        disabled // keep it read-only in edit mode
+                      />
+                    ) : (
+                      // When creating → show dropdown to select employee
+                      <FormControl fullWidth required>
+                        <InputLabel>Employee</InputLabel>
+                        <Select
+                          name="employeeId"
+                          value={formData.employeeId || ""}
+                          onChange={handleChange}
+                        >
+                          {employees.map((emp) => (
+                            <MenuItem key={emp._id} value={emp._id}>
+                              {emp.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
                   </Grid>
+
                   <Grid>
                     <TextField
                       fullWidth
@@ -872,7 +894,6 @@ const Client_Ticket = () => {
                       name="issue"
                       value={formData.issue}
                       onChange={handleChange}
-                      disabled={editMode}
                     />
                   </Grid>
 
