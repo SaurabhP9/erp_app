@@ -69,7 +69,7 @@ export default function Reports() {
         const [proj, emp, status] = await Promise.all([
           getAllProjects(),
           getAllUsersByRole("employee"),
-          getAllStatuses()
+          getAllStatuses(),
         ]);
 
         setProjects(proj);
@@ -417,7 +417,7 @@ export default function Reports() {
                           {row.ticketNo}
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
-                          {row.subject}
+                          {row.name}
                         </TableCell>
                         <TableCell sx={{ border: "1px solid #ccc" }}>
                           {row.category}
