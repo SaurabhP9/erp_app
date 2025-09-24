@@ -115,7 +115,7 @@ export default function Reports() {
       row.mainStatus,
       row.targetDate ? formatDate(row.targetDate) : "",
       row.ticketNo,
-      row.subject || "",
+      row.name || "",
       row.category || "",
     ]);
 
