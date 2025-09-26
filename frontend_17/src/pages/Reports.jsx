@@ -51,6 +51,7 @@ export default function Reports() {
   const [showReport, setShowReport] = useState(false);
   const [statuses, setStatuses] = useState([]);
 
+  // Existing headers for UI
   const headers = [
     "#",
     "Date",
@@ -62,6 +63,9 @@ export default function Reports() {
     "Subject",
     "Category",
   ];
+
+  // Headers for export (adds 'Assigned By')
+  const exportHeaders = [...headers, "Assigned By"];
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -89,7 +93,7 @@ export default function Reports() {
 
   const formatDate = (isoString) => {
     const date = new Date(isoString);
-    return date.toLocaleDateString("en-GB"); // DD/MM/YYYY format
+    return date.toLocaleDateString("en-GB"); // DD/MM/YYYY
   };
 
   const applyFilters = async () => {
@@ -106,10 +110,11 @@ export default function Reports() {
     }
   };
 
+  // Rows for UI table
   const mapRows = () =>
     filteredData.map((row, i) => [
       i + 1,
-      formatDateTime(row.createdTime),
+      formatDate(row.createdTime),
       row.employee,
       row.project,
       row.mainStatus,
@@ -117,6 +122,21 @@ export default function Reports() {
       row.ticketNo,
       row.name || "",
       row.category || "",
+    ]);
+
+  // Rows for export (adds "Assigned By" as last column)
+  const mapExportRows = () =>
+    filteredData.map((row, i) => [
+      i + 1,
+      formatDate(row.createdTime),
+      row.employee,
+      row.project,
+      row.mainStatus,
+      row.targetDate ? formatDate(row.targetDate) : "",
+      row.ticketNo,
+      row.name || "",
+      row.category || "",
+      row.subject || "", // Assigned By = Subject
     ]);
 
   const exportToExcel = () => {
@@ -135,7 +155,7 @@ export default function Reports() {
       filterRows.push(["Main Status:", formData.mainStatus]);
     if (formData.ticketNo) filterRows.push(["Ticket No:", formData.ticketNo]);
 
-    const wsData = [...filterRows, [], headers, ...mapRows()];
+    const wsData = [...filterRows, [], exportHeaders, ...mapExportRows()];
     const worksheet = XLSX.utils.aoa_to_sheet(wsData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
@@ -171,8 +191,8 @@ export default function Reports() {
 
     autoTable(doc, {
       startY: y + 2,
-      head: [headers],
-      body: mapRows(),
+      head: [exportHeaders],
+      body: mapExportRows(),
       styles: { fontSize: 8 },
     });
 
