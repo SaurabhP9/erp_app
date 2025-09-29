@@ -946,10 +946,10 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     const subject = `Consolidated Timesheet Summary - ${today}`;
     const plainText = `Consolidated timesheet summary for ${today}`;
     // 🔹 Hardcoded email IDs
-    // const toEmail = "development@clickerpservices.com";
-    // const ccEmails = ["prasad.chilwar@clickerpservices.com"];
-    const toEmail = "saurabh125pathare@gmail.com";
-    const ccEmails = "saurabh21pathare@gmail.com";
+    const toEmail = "development@clickerpservices.com";
+    const ccEmails = ["prasad.chilwar@clickerpservices.com"];
+    // const toEmail = "saurabh125pathare@gmail.com";
+    // const ccEmails = "saurabh21pathare@gmail.com";
 
     return await sendEmail(toEmail, subject, plainText, html, ccEmails);
   } catch (err) {
