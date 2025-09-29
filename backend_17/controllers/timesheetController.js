@@ -899,6 +899,7 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
                                 ? dayjs(t.targetDate).format("DD-MM-YYYY")
                                 : "-"
                             }</td>
+                            <td>${t.status || "-"}</td>
                             <td>${t.task || "-"}</td>
                             <td>${dayjs(t.createdAt).format("DD-MM-YYYY")}</td>
                             <td>${dayjs(t.updatedAt).format("DD-MM-YYYY")}</td>
@@ -921,6 +922,7 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
                             <th>Subject</th>
                             <th>Issued Date</th>
                             <th>Target Date</th>
+                            <th>Status</th>
                             <th>Task</th>
                             <th>Submitted Time</th>
                             <th>Last Updated</th>
@@ -944,8 +946,10 @@ exports.triggerEmailForEmployeeTimeSheet = async () => {
     const subject = `Consolidated Timesheet Summary - ${today}`;
     const plainText = `Consolidated timesheet summary for ${today}`;
     // 🔹 Hardcoded email IDs
-    const toEmail = "development@clickerpservices.com";
-    const ccEmails = ["prasad.chilwar@clickerpservices.com"];
+    // const toEmail = "development@clickerpservices.com";
+    // const ccEmails = ["prasad.chilwar@clickerpservices.com"];
+    const toEmail = "saurabh125pathare@gmail.com";
+    const ccEmails = "saurabh21pathare@gmail.com";
 
     return await sendEmail(toEmail, subject, plainText, html, ccEmails);
   } catch (err) {
