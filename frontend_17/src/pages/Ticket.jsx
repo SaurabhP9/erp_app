@@ -156,7 +156,7 @@ const Ticket = () => {
     // If it's already in local/IST, don't shift it again
     const istTime = parsed.tz("Asia/Kolkata");
 
-    return istTime.format("DD MMM YYYY hh:mm A");
+    return istTime.format("DD MMM YYYY");
   };
 
   const cellStyle = {
@@ -171,11 +171,11 @@ const Ticket = () => {
     const data = filteredTickets.map((ticket) => ({
       "Ticket No": ticket.ticketNo,
       Subject: ticket.name,
+      "Assigned By": ticket.subject,
       Project: ticket.project,
       Category: ticket.category,
       Priority: ticket.priority,
       "Main Status": ticket.mainStatus,
-      "Sub Status": ticket.subStatus,
       Assignee:
         users.find((u) => u._id === ticket.employeeId)?.name || "Unassigned",
       "Created Time": formatToIST(ticket.createdTime),
