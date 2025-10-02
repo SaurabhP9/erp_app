@@ -456,7 +456,7 @@ const Client_Ticket = () => {
       name: ticket.name || "",
       subject: ticket.subject || "",
       projectId: ticket.projectId || "",
-      project: ticket.project || (projects[0]?.project || ""),
+      project: ticket.project || (projects.length ?.project || ""),
       departmentId: ticket.departmentId || "",
       department: ticket.department || "",
       categoryId: ticket.categoryId || "",
