@@ -201,7 +201,7 @@ const Client_Ticket = () => {
         const finalProjects = allProjects.filter((p) =>
           (username || "").includes(p.project || "")
         );
-        setProjects(finalProjects.length ? finalProjects : allProjects);
+        setProjects(finalProjects || []);
       } catch (err) {
         console.error("Error loading data:", err);
       }
@@ -456,7 +456,7 @@ const Client_Ticket = () => {
       name: ticket.name || "",
       subject: ticket.subject || "",
       projectId: ticket.projectId || "",
-      project: ticket.project || (projects.length ?.project || ""),
+      project: ticket.project || (projects.length ? projects[0].project || ""),
       departmentId: ticket.departmentId || "",
       department: ticket.department || "",
       categoryId: ticket.categoryId || "",
