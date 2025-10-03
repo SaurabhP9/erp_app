@@ -20,7 +20,7 @@ import {
   CircularProgress,
   FormControl,
   InputLabel,
-  Select
+  Select,
 } from "@mui/material";
 
 import { sendTicketEmail } from "../../api/emailApi";
@@ -144,11 +144,17 @@ const Client_Ticket = () => {
         // Filter to only "functional" departments
         const functionalDepartments = Array.isArray(dept)
           ? dept.filter((d) =>
-            (d.department || "").toLowerCase().includes("functional")
-          )
+              (d.department || "").toLowerCase().includes("functional")
+            )
           : [];
 
-        setDepartments(functionalDepartments.length ? functionalDepartments : (Array.isArray(dept) ? dept : []));
+        setDepartments(
+          functionalDepartments.length
+            ? functionalDepartments
+            : Array.isArray(dept)
+            ? dept
+            : []
+        );
 
         // Auto-select department if exactly one functional exists (only when not editing)
         if (!editMode && functionalDepartments.length === 1) {
@@ -173,10 +179,10 @@ const Client_Ticket = () => {
         const filteredFunctional = allEmployees.filter((e) => {
           const hasProject = Array.isArray(e.projects)
             ? e.projects.some(
-              (p) =>
-                (p || "").toLowerCase().trim() ===
-                (username || "").toLowerCase().trim()
-            )
+                (p) =>
+                  (p || "").toLowerCase().trim() ===
+                  (username || "").toLowerCase().trim()
+              )
             : false;
           const functional = isFunctional(e);
           return hasProject && functional;
@@ -304,7 +310,9 @@ const Client_Ticket = () => {
 
       // attachments (if any)
       if (Array.isArray(formData.attachments) && formData.attachments.length) {
-        formData.attachments.forEach((file) => form.append("attachments", file));
+        formData.attachments.forEach((file) =>
+          form.append("attachments", file)
+        );
       }
 
       // userId only when creating new ticket
@@ -332,14 +340,12 @@ const Client_Ticket = () => {
 
       // optionally send emails:
       // if (createdOrUpdated?.userEmail) await sendEmailToClient(createdOrUpdated, createdOrUpdated.userEmail);
-
     } catch (err) {
       console.error("Submit failed:", err);
     } finally {
       setIsSubmitting(false);
     }
   };
-
 
   async function sendEmailToClient(createdOrUpdated, email) {
     const ticketNumber = createdOrUpdated.ticketNo || createdOrUpdated._id;
@@ -399,32 +405,41 @@ const Client_Ticket = () => {
     const htmlContent = `
     <div style="background-color: #fdf8e4; padding: 40px 0;">
       <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-        <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
-      },</p>
+        <p style="font-size: 16px;">Dear ${
+          assignedEmployee?.name || "Team"
+        },</p>
 
         <p style="font-size: 15px;">
-          ${isEdit
-        ? "The following ticket has been updated"
-        : "A new ticket has been assigned to you"
-      }. Please review the details below and take appropriate action.
+          ${
+            isEdit
+              ? "The following ticket has been updated"
+              : "A new ticket has been assigned to you"
+          }. Please review the details below and take appropriate action.
         </p>
 
         <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
         <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-          <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
-      }</td></tr>
-          <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
-      }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.name
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.subject
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.project
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.category
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.priority
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.issue
+          }</td></tr>
+          <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
+            createdOrUpdated.mainStatus || "Open"
+          }</td></tr>
         </table>
 
         <div style="margin-top: 30px; text-align: center;">
@@ -445,8 +460,9 @@ const Client_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
-        }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
+        createdOrUpdated.name
+      }`,
       html: htmlContent,
     });
   }
@@ -456,7 +472,7 @@ const Client_Ticket = () => {
       name: ticket.name || "",
       subject: ticket.subject || "",
       projectId: ticket.projectId || "",
-      project: ticket.project || (projects.length ? projects[0].project || ""),
+      project: ticket.project || (projects.length ? projects[0].project : ""),
       departmentId: ticket.departmentId || "",
       department: ticket.department || "",
       categoryId: ticket.categoryId || "",
@@ -517,7 +533,9 @@ const Client_Ticket = () => {
   const handleReaction = async (commentId, type) => {
     try {
       const updated = await reactToComment(commentId, type);
-      setComments((prev) => prev.map((c) => (c._id === commentId ? updated : c)));
+      setComments((prev) =>
+        prev.map((c) => (c._id === commentId ? updated : c))
+      );
     } catch (err) {
       console.error("Reaction failed:", err);
     }
@@ -544,7 +562,9 @@ const Client_Ticket = () => {
   const handleUpdateComment = async (commentId) => {
     try {
       const updated = await updateComment(commentId, editedCommentText);
-      setComments((prev) => prev.map((c) => (c._id === commentId ? updated : c)));
+      setComments((prev) =>
+        prev.map((c) => (c._id === commentId ? updated : c))
+      );
       setEditingCommentId(null);
       setEditedCommentText("");
     } catch (err) {
@@ -569,7 +589,8 @@ const Client_Ticket = () => {
 
   const sortedTickets = [...filteredTickets].sort(
     (a, b) =>
-      (dayjs(b.createdTime).valueOf() || 0) - (dayjs(a.createdTime).valueOf() || 0)
+      (dayjs(b.createdTime).valueOf() || 0) -
+      (dayjs(a.createdTime).valueOf() || 0)
   );
 
   /* —————————————————————————————————————————————————— */
@@ -927,7 +948,13 @@ const Client_Ticket = () => {
                           isSubmitting ? <CircularProgress size={20} /> : null
                         }
                       >
-                        {isSubmitting ? (editMode ? "Updating..." : "Creating...") : editMode ? "Update" : "Submit"}
+                        {isSubmitting
+                          ? editMode
+                            ? "Updating..."
+                            : "Creating..."
+                          : editMode
+                          ? "Update"
+                          : "Submit"}
                       </Button>
                       <Button
                         variant="outlined"
@@ -990,14 +1017,26 @@ const Client_Ticket = () => {
                   ⬅ BACK
                 </Button>
               </Box>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={1}
+              >
                 <Typography variant="h5" fontWeight="bold">
-                  Ticket - {viewTicket.ticketNo || viewTicket._id} - {viewTicket.subject}
+                  Ticket - {viewTicket.ticketNo || viewTicket._id} -{" "}
+                  {viewTicket.subject}
                 </Typography>
               </Box>
 
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: "0.75rem", mb: 2 }}>
-                Added by {viewTicket.createdBy?.name || "User"} • Updated {viewTicket.lastUpdated || viewTicket.updatedTime || ""}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                sx={{ fontSize: "0.75rem", mb: 2 }}
+              >
+                Added by {viewTicket.createdBy?.name || "User"} • Updated{" "}
+                {viewTicket.lastUpdated || viewTicket.updatedTime || ""}
               </Typography>
 
               <Box sx={{ display: "flex", flexWrap: "wrap" }}>
@@ -1014,7 +1053,8 @@ const Client_Ticket = () => {
 
                 <Box sx={{ width: "50%", mb: 1 }}>
                   <Typography sx={{ fontSize: "0.9rem" }}>
-                    <strong>Assignee:</strong> {viewTicket.employee || "Not Assigned"}
+                    <strong>Assignee:</strong>{" "}
+                    {viewTicket.employee || "Not Assigned"}
                   </Typography>
                 </Box>
                 <Box sx={{ width: "50%", mb: 1 }}>
@@ -1030,7 +1070,8 @@ const Client_Ticket = () => {
                 </Box>
                 <Box sx={{ width: "50%", mb: 1 }}>
                   <Typography sx={{ fontSize: "0.9rem" }}>
-                    <strong>Submitted:</strong> {viewTicket.submittedTime || viewTicket.createdTime}
+                    <strong>Submitted:</strong>{" "}
+                    {viewTicket.submittedTime || viewTicket.createdTime}
                   </Typography>
                 </Box>
 
@@ -1038,7 +1079,10 @@ const Client_Ticket = () => {
                   <Typography sx={{ fontSize: "0.9rem", mb: 0.5 }}>
                     <strong>Description:</strong>
                   </Typography>
-                  <Typography sx={{ fontSize: "0.9rem", whiteSpace: "pre-line" }} color="text.secondary">
+                  <Typography
+                    sx={{ fontSize: "0.9rem", whiteSpace: "pre-line" }}
+                    color="text.secondary"
+                  >
                     {viewTicket.issue}
                   </Typography>
                 </Box>
@@ -1048,10 +1092,16 @@ const Client_Ticket = () => {
                 <Typography variant="subtitle1" fontWeight="bold" mb={1}>
                   📎 Attachments
                 </Typography>
-                {Array.isArray(viewTicket.attachments) && viewTicket.attachments.length > 0 ? (
+                {Array.isArray(viewTicket.attachments) &&
+                viewTicket.attachments.length > 0 ? (
                   viewTicket.attachments.map((file, i) => (
                     <Box key={i} sx={{ mb: 0.5 }}>
-                      <a href={`${BASE_URL}/${file.path}`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", color: "#1976d2" }}>
+                      <a
+                        href={`${BASE_URL}/${file.path}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ textDecoration: "none", color: "#1976d2" }}
+                      >
                         📄 {file.filename}
                       </a>
                     </Box>
@@ -1067,29 +1117,63 @@ const Client_Ticket = () => {
                 </Typography>
                 {comments.map((c) => (
                   <Paper key={c._id} sx={{ p: 2, mt: 2 }}>
-                    <Typography fontWeight="bold">{c.userId?.name || c.userName}</Typography>
-                    <Typography variant="caption" sx={{ fontSize: "0.75rem", color: "#888" }}>
+                    <Typography fontWeight="bold">
+                      {c.userId?.name || c.userName}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{ fontSize: "0.75rem", color: "#888" }}
+                    >
                       {new Date(c.updatedAt || c.createdAt).toLocaleString()}
                     </Typography>
 
                     {editingCommentId === c._id ? (
                       <Box>
-                        <TextField fullWidth multiline rows={2} value={editedCommentText} onChange={(e) => setEditedCommentText(e.target.value)} sx={{ mt: 1 }} />
-                        <Button size="small" onClick={() => handleUpdateComment(c._id)} sx={{ mt: 1, mr: 1 }}>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={2}
+                          value={editedCommentText}
+                          onChange={(e) => setEditedCommentText(e.target.value)}
+                          sx={{ mt: 1 }}
+                        />
+                        <Button
+                          size="small"
+                          onClick={() => handleUpdateComment(c._id)}
+                          sx={{ mt: 1, mr: 1 }}
+                        >
                           Save
                         </Button>
-                        <Button size="small" onClick={() => setEditingCommentId(null)} sx={{ mt: 1 }}>
+                        <Button
+                          size="small"
+                          onClick={() => setEditingCommentId(null)}
+                          sx={{ mt: 1 }}
+                        >
                           Cancel
                         </Button>
                       </Box>
                     ) : (
-                      <Typography sx={{ mt: 1, whiteSpace: "pre-line" }}>{c.comment}</Typography>
+                      <Typography sx={{ mt: 1, whiteSpace: "pre-line" }}>
+                        {c.comment}
+                      </Typography>
                     )}
                   </Paper>
                 ))}
 
-                <TextField fullWidth multiline rows={3} placeholder="Add a comment..." value={newComment} onChange={(e) => setNewComment(e.target.value)} sx={{ mt: 2 }} />
-                <Button variant="contained" sx={{ mt: 1 }} onClick={submitComment}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  sx={{ mt: 2 }}
+                />
+                <Button
+                  variant="contained"
+                  sx={{ mt: 1 }}
+                  onClick={submitComment}
+                >
                   Post Comment
                 </Button>
               </Box>
