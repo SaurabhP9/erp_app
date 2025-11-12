@@ -24,6 +24,7 @@ const commentRoutes = require("./routes/commentRoutes");
 const healthRoute = require("./routes/healthRoute");
 
 const cronRoutes = require("./routes/cronRoutes");
+const taskCategoryRoutes = require("./routes/taskCategoryRoutes");
 
 const app = express();
 
@@ -78,6 +79,7 @@ app.use("/api/home", homeRoutes);
 app.use("/api/ticket", ticketRoutes);
 app.use("/api/project", projectRoutes);
 app.use("/api/comments", commentRoutes);
+app.use('/api/taskCategory', taskCategoryRoutes);
 
 // Connect DB and then start server
 connectDB().then(() => {

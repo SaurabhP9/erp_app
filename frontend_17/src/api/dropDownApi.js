@@ -15,6 +15,11 @@ export const getAllCategories = async () => {
   return res.data;
 };
 
+export const getAllTaskCategories = async () => {
+  const res = await api.get("/api/taskCategory/all");
+  return res.data;
+};
+
 export const getAllPriorities = async () => {
   const res = await api.get("/api/priority/all");
   return res.data;

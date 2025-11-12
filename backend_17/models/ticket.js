@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const taskCategory = require("./taskCategory");
 
 const ticketSchema = new mongoose.Schema({
   name: {
@@ -66,6 +67,9 @@ const ticketSchema = new mongoose.Schema({
   },
   targetDate: {
     type: Date,
+  },
+  taskCategory: {
+    type: String,
   },
   handoverHistory: [
     {
