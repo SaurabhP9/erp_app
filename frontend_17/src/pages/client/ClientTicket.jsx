@@ -1356,11 +1356,23 @@ const Client_Ticket = () => {
         const userId = localStorage.getItem("userId");
 
         // Filter tickets created by current user (safe guard if ticketData undefined)
-        const createdTickets = Array.isArray(ticketData)
-          ? ticketData.filter((t) => t.userId === userId)
+        const clientId = localStorage.getItem("userId");
+        const usernameLocal = (localStorage.getItem("username") || "")
+          .trim()
+          .toLowerCase();
+
+        const visibleTickets = Array.isArray(ticketData)
+          ? ticketData.filter((t) => {
+              const isClientCreated = t.userId === clientId;
+
+              const isEmployeeCreatedForClient =
+                (t.project || "").trim().toLowerCase() === usernameLocal;
+
+              return isClientCreated || isEmployeeCreatedForClient;
+            })
           : [];
 
-        setTickets(createdTickets);
+        setTickets(visibleTickets);
 
         // Filter to only "functional" departments
         const functionalDepartments = Array.isArray(dept)
