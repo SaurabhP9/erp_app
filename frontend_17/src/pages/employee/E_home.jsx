@@ -121,11 +121,19 @@ export default function E_home() {
           Ahilyanagar, Maharashtra, India - 414 003
         </Typography>
         <Typography variant="body2">
-          <strong>Phone No.:</strong> 090285 68867, <strong>Email Id:</strong>{" "}
+          <strong>Phone No.:</strong> 90285 68867, <strong>Email Id:</strong>{" "}
           yogesh.kale@clickerpservices.com
         </Typography>
         <Typography variant="body2">
-          <strong>Website:</strong> clickerpservices.com
+          <strong>Website:</strong>{" "}
+          <a
+            href="https://clickerpservices.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "blue", textDecoration: "underline" }}
+          >
+            clickerpservices.com
+          </a>
         </Typography>
       </Box>
     </Container>
