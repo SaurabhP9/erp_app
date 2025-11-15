@@ -345,7 +345,7 @@ export default function ClientHome() {
         </Typography>
         <Typography variant="body2">
           09, Ramnath Park, Lokmanya Nagar, Near Bhistbagh Naka, Savedi,
-          Ahmednagar, Maharashtra, India - 414 003
+          Ahilyanagar, Maharashtra, India - 414 003
         </Typography>
         <Typography variant="body2">
           <strong>Phone No.:</strong> 090285 68867, <strong>Email Id:</strong>{" "}
@@ -353,9 +353,6 @@ export default function ClientHome() {
         </Typography>
         <Typography variant="body2">
           <strong>Website:</strong> clickerpservices.com
-        </Typography>
-        <Typography variant="caption" display="block" mt={2}>
-          ©2025 Click ERP Services Pvt. Ltd.
         </Typography>
       </Box>
     </Container>

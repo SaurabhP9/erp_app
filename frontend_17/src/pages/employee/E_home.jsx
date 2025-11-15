@@ -32,7 +32,8 @@ export default function E_home() {
   useEffect(() => {
     const fetchTicketSummary = async () => {
       const employeeId = localStorage.getItem("userId");
-      if (!employeeId) return console.error("User ID not found in localStorage");
+      if (!employeeId)
+        return console.error("User ID not found in localStorage");
 
       try {
         const summary = await getEmployeeTicketSummary(employeeId);
@@ -51,7 +52,12 @@ export default function E_home() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 6 }}>
-      <Typography variant="h6" fontWeight="bold" gutterBottom fontSize={{ xs: 18, sm: 20 }}>
+      <Typography
+        variant="h6"
+        fontWeight="bold"
+        gutterBottom
+        fontSize={{ xs: 18, sm: 20 }}
+      >
         Ticket Summary
       </Typography>
 
@@ -60,7 +66,10 @@ export default function E_home() {
           <TableHead sx={{ backgroundColor: "grey" }}>
             <TableRow>
               {["#", "Ticket", "Count"].map((header, i) => (
-                <TableCell key={i} sx={{ border: 1, color: "#fff", fontWeight: "bold" }}>
+                <TableCell
+                  key={i}
+                  sx={{ border: 1, color: "#fff", fontWeight: "bold" }}
+                >
                   {header}
                 </TableCell>
               ))}
@@ -74,10 +83,15 @@ export default function E_home() {
                   key={index}
                   sx={{
                     cursor: isClickable ? "pointer" : "default",
-                    "&:hover": { backgroundColor: isClickable ? "#f5f5f5" : "inherit" },
+                    "&:hover": {
+                      backgroundColor: isClickable ? "#f5f5f5" : "inherit",
+                    },
                   }}
                   onClick={() =>
-                    isClickable && navigate(`/employee/my-tickets?status=${statusMap[row.label]}`)
+                    isClickable &&
+                    navigate(
+                      `/employee/my-tickets?status=${statusMap[row.label]}`
+                    )
                   }
                 >
                   <TableCell sx={{ border: 1 }}>{index + 1}</TableCell>
@@ -104,16 +118,14 @@ export default function E_home() {
         </Typography>
         <Typography variant="body2">
           09, Ramnath Park, Lokmanya Nagar, Near Bhistbagh Naka, Savedi,
-          Ahmednagar, Maharashtra, India - 414 003
+          Ahilyanagar, Maharashtra, India - 414 003
         </Typography>
         <Typography variant="body2">
-          <strong>Phone No.:</strong> 090285 68867, <strong>Email Id:</strong> yogesh.kale@clickerpservices.com
+          <strong>Phone No.:</strong> 090285 68867, <strong>Email Id:</strong>{" "}
+          yogesh.kale@clickerpservices.com
         </Typography>
         <Typography variant="body2">
           <strong>Website:</strong> clickerpservices.com
-        </Typography>
-        <Typography variant="caption" display="block" mt={2}>
-          ©2025 Click ERP Services Pvt. Ltd.
         </Typography>
       </Box>
     </Container>
