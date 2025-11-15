@@ -125,7 +125,6 @@ const E_Ticket = () => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
 
-
   const [isPublic, setIsPublic] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -152,6 +151,8 @@ const E_Ticket = () => {
   const [snackbarMessage, setSnackbarMessage] = useState(""); // New: State for Snackbar message
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // New: State for Snackbar severity
   const [clients, setClients] = useState([]);
+  const disableUneditableFields = editMode;
+
   // const [isTargetDatePresent, setIsTargetDatePresent] = useState(false);
 
   const cellStyle = {
@@ -313,7 +314,7 @@ const E_Ticket = () => {
 
       setTickets(filtered);
       setProjects(proj);
-      setTaskCategories(taskCat)
+      setTaskCategories(taskCat);
       setCategories(cat);
       setPriorities(prio);
       // const filterEmp = emp.filter((e) => e._id !== userId);
@@ -547,11 +548,11 @@ const E_Ticket = () => {
           prev.map((t) =>
             t._id === editId
               ? {
-                ...createdOrUpdated,
-                employee:
-                  employees.find((e) => e._id === createdOrUpdated.employeeId)
-                    ?.name || "",
-              }
+                  ...createdOrUpdated,
+                  employee:
+                    employees.find((e) => e._id === createdOrUpdated.employeeId)
+                      ?.name || "",
+                }
               : t
           )
         );
@@ -693,32 +694,41 @@ const E_Ticket = () => {
     const htmlContent = `
         <div style="background-color: #fdf8e4; padding: 40px 0;">
           <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-            <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
-      },</p>
+            <p style="font-size: 16px;">Dear ${
+              assignedEmployee?.name || "Team"
+            },</p>
 
             <p style="font-size: 15px;">
-              ${isEdit
-        ? "The following ticket has been updated"
-        : "A new ticket has been assigned to you"
-      }. Please review the details below and take appropriate action.
+              ${
+                isEdit
+                  ? "The following ticket has been updated"
+                  : "A new ticket has been assigned to you"
+              }. Please review the details below and take appropriate action.
             </p>
 
             <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
             <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
-      }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
-      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.name
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.subject
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.project
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.category
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.priority
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.issue
+              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
+                createdOrUpdated.mainStatus || "Open"
+              }</td></tr>
             </table>
 
             <div style="margin-top: 30px; text-align: center;">
@@ -739,8 +749,9 @@ const E_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
-        }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
+        createdOrUpdated.name
+      }`,
       html: htmlContent,
     });
   }
@@ -1107,20 +1118,20 @@ const E_Ticket = () => {
                               idx === 0
                                 ? "5px"
                                 : idx === 1
-                                  ? "10px"
-                                  : idx === 2
-                                    ? "20px"
-                                    : idx === 3
-                                      ? "20px"
-                                      : idx === 4
-                                        ? "40px"
-                                        : idx === 5 || idx === 6 // ✅ Submitted Time & Target Date same width
-                                          ? "25px"
-                                          : idx === 7 || idx === 8 || idx === 9
-                                            ? "25px"
-                                            : idx === 10
-                                              ? "15px"
-                                              : "auto",
+                                ? "10px"
+                                : idx === 2
+                                ? "20px"
+                                : idx === 3
+                                ? "20px"
+                                : idx === 4
+                                ? "40px"
+                                : idx === 5 || idx === 6 // ✅ Submitted Time & Target Date same width
+                                ? "25px"
+                                : idx === 7 || idx === 8 || idx === 9
+                                ? "25px"
+                                : idx === 10
+                                ? "15px"
+                                : "auto",
                           }}
                         >
                           {label}
@@ -1225,8 +1236,8 @@ const E_Ticket = () => {
                               label={
                                 statusMap[ticket.mainStatus?.toLowerCase()]
                                   ? statusMap[
-                                    ticket.mainStatus?.toLowerCase()
-                                  ].join(", ")
+                                      ticket.mainStatus?.toLowerCase()
+                                    ].join(", ")
                                   : "—"
                               }
                               size="small"
@@ -1280,6 +1291,7 @@ const E_Ticket = () => {
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2} direction="column">
+              {/* Assigned By */}
               <Grid>
                 <TextField
                   fullWidth
@@ -1288,9 +1300,11 @@ const E_Ticket = () => {
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
-                  disabled={lockAllFields}
+                  disabled={lockAllFields || editMode} // 🔒 edit mode disabled
                 />
               </Grid>
+
+              {/* Description */}
               <Grid>
                 <TextField
                   fullWidth
@@ -1299,9 +1313,11 @@ const E_Ticket = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  disabled={lockAllFields}
+                  disabled={lockAllFields || editMode} // 🔒 edit mode disabled
                 />
               </Grid>
+
+              {/* Project */}
               <Grid>
                 <TextField
                   select
@@ -1322,24 +1338,10 @@ const E_Ticket = () => {
                 </TextField>
               </Grid>
 
-              {/* <TextField
-                margin="dense"
-                type="date"
-                fullWidth
-                variant="outlined"
-                required={!formData.targetDate}
-                value={
-                  formData.targetDate
-                    ? dayjs(formData.targetDate, ["DD-MM-YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD")
-                    : ""
-                }
-                onChange={handleChange}
-                disabled={isTargetDatePresent}
-              /> */}
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="Target Date"
-                  format="DD/MM/YYYY" // 👈 Force input/output format
+                  format="DD/MM/YYYY"
                   value={
                     formData.targetDate
                       ? dayjs(formData.targetDate, ["DD/MM/YYYY", "YYYY-MM-DD"])
@@ -1361,6 +1363,7 @@ const E_Ticket = () => {
                 />
               </LocalizationProvider>
 
+              {/* Task Category */}
               <Grid>
                 <TextField
                   select
@@ -1381,6 +1384,7 @@ const E_Ticket = () => {
                 </TextField>
               </Grid>
 
+              {/* Category */}
               <Grid>
                 <TextField
                   select
@@ -1390,7 +1394,7 @@ const E_Ticket = () => {
                   name="categoryId"
                   value={formData.categoryId || ""}
                   onChange={handleChange}
-                  disabled={lockAllFields}
+                  disabled={lockAllFields || editMode} // 🔒 edit mode disabled
                 >
                   <MenuItem value="">Select</MenuItem>
                   {categories.map((cat) => (
@@ -1400,6 +1404,8 @@ const E_Ticket = () => {
                   ))}
                 </TextField>
               </Grid>
+
+              {/* Priority */}
               <Grid>
                 <TextField
                   select
@@ -1409,6 +1415,7 @@ const E_Ticket = () => {
                   name="priorityId"
                   value={formData.priorityId || ""}
                   onChange={handleChange}
+                  disabled={editMode} // 🔒 edit mode disabled
                 >
                   <MenuItem value="">Select</MenuItem>
                   {priorities.map((pri) => (
@@ -1418,6 +1425,8 @@ const E_Ticket = () => {
                   ))}
                 </TextField>
               </Grid>
+
+              {/* Main Status */}
               <Grid>
                 <TextField
                   select
@@ -1447,6 +1456,8 @@ const E_Ticket = () => {
                   })}
                 </TextField>
               </Grid>
+
+              {/* Assignee / Client */}
               <Grid>
                 <TextField
                   select
@@ -1472,17 +1483,19 @@ const E_Ticket = () => {
                   <MenuItem value="">Select</MenuItem>
                   {formData.mainStatus?.toLowerCase() === "handover"
                     ? clients.map((client) => (
-                      <MenuItem key={client._id} value={client._id}>
-                        {client.name}
-                      </MenuItem>
-                    ))
+                        <MenuItem key={client._id} value={client._id}>
+                          {client.name}
+                        </MenuItem>
+                      ))
                     : employees.map((emp) => (
-                      <MenuItem key={emp._id} value={emp._id}>
-                        {emp.name}
-                      </MenuItem>
-                    ))}
+                        <MenuItem key={emp._id} value={emp._id}>
+                          {emp.name}
+                        </MenuItem>
+                      ))}
                 </TextField>
               </Grid>
+
+              {/* Issue */}
               <Grid>
                 <TextField
                   fullWidth
@@ -1493,9 +1506,11 @@ const E_Ticket = () => {
                   name="issue"
                   value={formData.issue}
                   onChange={handleChange}
-                  disabled={lockAllFields}
+                  disabled={lockAllFields || editMode} // 🔒 edit mode disabled
                 />
               </Grid>
+
+              {/* Attachments */}
               <Grid>
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   Attachments
@@ -1516,24 +1531,26 @@ const E_Ticket = () => {
                 )}
               </Grid>
 
+              {/* Submit Buttons */}
               <Grid>
                 <Box mt={2} display="flex" gap={2}>
                   <Button
                     type="submit"
                     variant="contained"
-                    disabled={isSubmitting || lockAllFields} // Disable button when submitting
+                    disabled={isSubmitting || lockAllFields}
                     startIcon={
                       isSubmitting ? <CircularProgress size={20} /> : null
-                    } // Show loading spinner
+                    }
                   >
                     {isSubmitting
                       ? editMode
                         ? "Updating..."
                         : "Creating..."
                       : editMode
-                        ? "Update"
-                        : "Submit"}
+                      ? "Update"
+                      : "Submit"}
                   </Button>
+
                   <Button variant="outlined" onClick={() => setShowForm(false)}>
                     Back
                   </Button>
@@ -1646,7 +1663,7 @@ const E_Ticket = () => {
                   📎 Attachments
                 </Typography>
                 {Array.isArray(viewTicket.attachments) &&
-                  viewTicket.attachments.length > 0 ? (
+                viewTicket.attachments.length > 0 ? (
                   viewTicket.attachments.map((file, i) => (
                     <Box
                       key={i}
