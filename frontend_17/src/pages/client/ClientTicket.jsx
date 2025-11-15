@@ -1878,7 +1878,7 @@ LTD.</span><br/>
                       "Ticket Id",
                       "Ticket",
 
-                      "Assigned By",
+                      "Created By",
                       "Project",
                       "Submitted Time",
                       "Last Updated",
