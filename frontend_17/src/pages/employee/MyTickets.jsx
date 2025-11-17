@@ -480,6 +480,15 @@ const E_Ticket = () => {
       }));
       return;
     }
+    
+    if (name == "taskCategory") {
+      setFormData((prev) => ({
+        ...prev,
+        taskCategory: value,
+      }));
+      console.log("data ", value, "name", name)
+      return;
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -524,7 +533,6 @@ const E_Ticket = () => {
 
       if (editMode) {
         setIsUpdated(true);
-        const originalTicket = tickets.find((t) => t._id === editId);
 
         // ✅ Add all fields to FormData
         Object.entries(formData).forEach(([key, value]) => {
@@ -548,11 +556,11 @@ const E_Ticket = () => {
           prev.map((t) =>
             t._id === editId
               ? {
-                  ...createdOrUpdated,
-                  employee:
-                    employees.find((e) => e._id === createdOrUpdated.employeeId)
-                      ?.name || "",
-                }
+                ...createdOrUpdated,
+                employee:
+                  employees.find((e) => e._id === createdOrUpdated.employeeId)
+                    ?.name || "",
+              }
               : t
           )
         );
@@ -694,41 +702,32 @@ const E_Ticket = () => {
     const htmlContent = `
         <div style="background-color: #fdf8e4; padding: 40px 0;">
           <div style="max-width: 500px; margin: auto; background-color: #fff; padding: 30px; border: 1px solid #ddd; font-family: Arial, sans-serif; color: #333;">
-            <p style="font-size: 16px;">Dear ${
-              assignedEmployee?.name || "Team"
-            },</p>
+            <p style="font-size: 16px;">Dear ${assignedEmployee?.name || "Team"
+      },</p>
 
             <p style="font-size: 15px;">
-              ${
-                isEdit
-                  ? "The following ticket has been updated"
-                  : "A new ticket has been assigned to you"
-              }. Please review the details below and take appropriate action.
+              ${isEdit
+        ? "The following ticket has been updated"
+        : "A new ticket has been assigned to you"
+      }. Please review the details below and take appropriate action.
             </p>
 
             <h3 style="margin-top: 20px; margin-bottom: 10px;">Ticket Details</h3>
             <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
-              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.name
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.subject
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.project
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.category
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.priority
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.issue
-              }</td></tr>
-              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${
-                createdOrUpdated.mainStatus || "Open"
-              }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Ticket Name:</strong></td><td style="padding: 6px;">${createdOrUpdated.name
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Subject:</strong></td><td style="padding: 6px;">${createdOrUpdated.subject
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Project:</strong></td><td style="padding: 6px;">${createdOrUpdated.project
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Category:</strong></td><td style="padding: 6px;">${createdOrUpdated.category
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Priority:</strong></td><td style="padding: 6px;">${createdOrUpdated.priority
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Issue:</strong></td><td style="padding: 6px;">${createdOrUpdated.issue
+      }</td></tr>
+              <tr><td style="padding: 6px;"><strong>Status:</strong></td><td style="padding: 6px;">${createdOrUpdated.mainStatus || "Open"
+      }</td></tr>
             </table>
 
             <div style="margin-top: 30px; text-align: center;">
@@ -749,9 +748,8 @@ const E_Ticket = () => {
     await sendTicketEmail({
       to: assignedEmployee?.email || "default@example.com",
       subject,
-      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${
-        createdOrUpdated.name
-      }`,
+      text: `${isEdit ? "Ticket updated" : "New ticket assigned"}: ${createdOrUpdated.name
+        }`,
       html: htmlContent,
     });
   }
@@ -784,7 +782,7 @@ const E_Ticket = () => {
       clientId: ticket.clientId || "",
       attachments: [],
       targetDate: dayjs(ticket.targetDate) || "",
-      taskCategory: ticket.taskCategory || "",
+      taskCategory: ticket.taskCategory ?? "",
     });
 
     // setIsTargetDatePresent(!!ticket.targetDate);
@@ -1118,20 +1116,20 @@ const E_Ticket = () => {
                               idx === 0
                                 ? "5px"
                                 : idx === 1
-                                ? "10px"
-                                : idx === 2
-                                ? "20px"
-                                : idx === 3
-                                ? "20px"
-                                : idx === 4
-                                ? "40px"
-                                : idx === 5 || idx === 6 // ✅ Submitted Time & Target Date same width
-                                ? "25px"
-                                : idx === 7 || idx === 8 || idx === 9
-                                ? "25px"
-                                : idx === 10
-                                ? "15px"
-                                : "auto",
+                                  ? "10px"
+                                  : idx === 2
+                                    ? "20px"
+                                    : idx === 3
+                                      ? "20px"
+                                      : idx === 4
+                                        ? "40px"
+                                        : idx === 5 || idx === 6 // ✅ Submitted Time & Target Date same width
+                                          ? "25px"
+                                          : idx === 7 || idx === 8 || idx === 9
+                                            ? "25px"
+                                            : idx === 10
+                                              ? "15px"
+                                              : "auto",
                           }}
                         >
                           {label}
@@ -1236,8 +1234,8 @@ const E_Ticket = () => {
                               label={
                                 statusMap[ticket.mainStatus?.toLowerCase()]
                                   ? statusMap[
-                                      ticket.mainStatus?.toLowerCase()
-                                    ].join(", ")
+                                    ticket.mainStatus?.toLowerCase()
+                                  ].join(", ")
                                   : "—"
                               }
                               size="small"
@@ -1369,7 +1367,7 @@ const E_Ticket = () => {
                   select
                   fullWidth
                   required
-                  label="task Category"
+                  label="taskCategory"
                   name="taskCategory"
                   value={formData.taskCategory || ""}
                   onChange={handleChange}
@@ -1377,7 +1375,7 @@ const E_Ticket = () => {
                 >
                   <MenuItem value="">Select</MenuItem>
                   {taskCategories.map((tc) => (
-                    <MenuItem key={tc._id} value={tc._id}>
+                    <MenuItem key={tc.name} value={tc.name}>
                       {tc.name}
                     </MenuItem>
                   ))}
@@ -1483,15 +1481,15 @@ const E_Ticket = () => {
                   <MenuItem value="">Select</MenuItem>
                   {formData.mainStatus?.toLowerCase() === "handover"
                     ? clients.map((client) => (
-                        <MenuItem key={client._id} value={client._id}>
-                          {client.name}
-                        </MenuItem>
-                      ))
+                      <MenuItem key={client._id} value={client._id}>
+                        {client.name}
+                      </MenuItem>
+                    ))
                     : employees.map((emp) => (
-                        <MenuItem key={emp._id} value={emp._id}>
-                          {emp.name}
-                        </MenuItem>
-                      ))}
+                      <MenuItem key={emp._id} value={emp._id}>
+                        {emp.name}
+                      </MenuItem>
+                    ))}
                 </TextField>
               </Grid>
 
@@ -1547,8 +1545,8 @@ const E_Ticket = () => {
                         ? "Updating..."
                         : "Creating..."
                       : editMode
-                      ? "Update"
-                      : "Submit"}
+                        ? "Update"
+                        : "Submit"}
                   </Button>
 
                   <Button variant="outlined" onClick={() => setShowForm(false)}>
@@ -1663,7 +1661,7 @@ const E_Ticket = () => {
                   📎 Attachments
                 </Typography>
                 {Array.isArray(viewTicket.attachments) &&
-                viewTicket.attachments.length > 0 ? (
+                  viewTicket.attachments.length > 0 ? (
                   viewTicket.attachments.map((file, i) => (
                     <Box
                       key={i}
