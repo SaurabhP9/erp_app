@@ -2,16 +2,26 @@
 const { Timesheet, Ticket, Counter } = require("../models");
 const cloudinary = require("cloudinary").v2;
 
-// const formatDate = (isoString) => {
-//   const date = new Date(isoString);
-//   return date.toLocaleString("en-IN", {
-//     day: "2-digit",
-//     month: "short",
-//     year: "numeric",
-//     hour: "2-digit",
-//     minute: "2-digit",
-//   });
-// };
+
+const allowedFields = [
+  "name",
+  "subject",
+  "projectId",
+  "project",
+  "departmentId",
+  "department",
+  "categoryId",
+  "category",
+  "priorityId",
+  "priority",
+  "employeeId",
+  "employee",
+  "clientId",
+  "issue",
+  "mainStatus",
+  "targetDate",
+  "taskCategory",
+];
 
 exports.getFilteredTickets = async (req, res) => {
   try {
@@ -97,11 +107,12 @@ exports.createTicket = async (req, res) => {
     // ✅ Build final ticket object
     const ticketData = {
       ...req.body,
+      taskCategory: req.body.taskCategory,
       attachments,
       ticketNo,
       updatedTime: new Date(),
       createdTime: new Date(),
-    };
+    };    
 
     // If it's a handover and handoverHistory was not provided by frontend
     if (isHandover && (!req.body.handoverHistory || req.body.handoverHistory.length === 0)) {
@@ -159,112 +170,6 @@ exports.getTicketById = async (req, res) => {
   }
 };
 
-// new updating method for tickets
-// exports.updateTicketNew = async (req, res) => {
-//   try {
-//     const ticketId = req.params.id;
-
-//     let newAttachments = [];
-//     if (Array.isArray(req.files) && req.files.length > 0) {
-//       newAttachments = req.files.map((file) => ({
-//         filename: file.originalname,
-//         url: file.path,          // Cloudinary public URL
-//         public_id: file.filename, // Cloudinary public_id (for delete later)
-//         mimetype: file.mimetype,
-//       }));
-//     }
-
-//     let updateOps = { $set: { ...req.body } };
-
-//     if (req.body.existingAttachments) {
-//       try {
-//         const existing = JSON.parse(req.body.existingAttachments); 
-//         updateOps.$set.attachments = [...existing, ...newAttachments];
-//       } catch (e) {
-//         console.error("Error parsing existingAttachments:", e);
-//       }
-//     } else if (newAttachments.length > 0) {
-//       updateOps.$push = { attachments: { $each: newAttachments } };
-//     }
-
-//     // Handle FormData-based handoverHistory parsing (unchanged)
-//     if (req.body['handoverHistory[0].fromEmployeeId']) {
-//       const parsedHistory = [];
-//       let i = 0;
-
-//       while (req.body[`handoverHistory[${i}].fromEmployeeId`]) {
-//         parsedHistory.push({
-//           fromEmployeeId: req.body[`handoverHistory[${i}].fromEmployeeId`],
-//           toEmployeeId: req.body[`handoverHistory[${i}].toEmployeeId`] || null,
-//           toClientId: req.body[`handoverHistory[${i}].toClientId`] || null,
-//           reassignedBy: req.body[`handoverHistory[${i}].reassignedBy`],
-//           reassignedAt: new Date(req.body[`handoverHistory[${i}].reassignedAt`]),
-//         });
-//         i++;
-//       }
-
-//       req.body.handoverHistory = parsedHistory;
-
-//       Object.keys(req.body).forEach((key) => {
-//         if (key.startsWith("handoverHistory[")) delete req.body[key];
-//       });
-//     }
-
-//     const { mainStatus, employeeId, clientId, reassignedBy } = req.body;
-
-//     const ticket = await Ticket.findById(ticketId);
-//     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
-
-//     const isAlreadyClosed = ticket.mainStatus === "closed";
-//     if (!isAlreadyClosed) {
-//       updateOps.$set.updatedTime = new Date();
-//     }
-
-//     let pushHandover = null;
-
-//     if (mainStatus === "inProcess") {
-//       // Employee → Employee
-//       pushHandover = {
-//         fromEmployeeId: ticket.employeeId,
-//         toEmployeeId: employeeId,
-//         reassignedBy,
-//         reassignedAt: new Date(),
-//       };
-//     } else if (mainStatus === "handover") {
-//       // Employee → Client
-//       pushHandover = {
-//         fromEmployeeId: ticket.employeeId,
-//         toClientId: clientId,
-//         reassignedBy,
-//         reassignedAt: new Date(),
-//       };
-//     }
-
-//     if (pushHandover) {
-//       updateOps.$push = {
-//         ...(updateOps.$push || {}),
-//         handoverHistory: pushHandover,
-//       };
-//     }
-
-//     const updatedTicket = await Ticket.findByIdAndUpdate(ticketId, updateOps, {
-//       new: true,
-//       runValidators: true,
-//     });
-
-//     const formattedTicket = {
-//       ...updatedTicket.toObject(),
-//       createdTime: formatDate(updatedTicket.createdTime),
-//       updatedTime: formatDate(updatedTicket.updatedTime),
-//     };
-
-//     res.json(formattedTicket);
-//   } catch (err) {
-//     console.error("Ticket update error:", err);
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-
 
 // Delete Ticket
 exports.deleteTicket = async (req, res) => {
@@ -277,102 +182,6 @@ exports.deleteTicket = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-// GET /api/ticket/report?type=ticket | user | employee
-// exports.getReportTickets = async (req, res) => {
-//   try {
-//     const { type = "ticket" } = req.query;
-//     console.log("Starting to report ");
-
-//     const tickets = await Ticket.find();
-
-//     if (type === "user") {
-//       // Group by userId
-//       const users = await User.find();
-//       const summary = users.map((user) => {
-//         const userTickets = tickets.filter(t => t.userId === user._id.toString());
-
-//         const counts = {
-//           open: 0,
-//           inProcess: 0,
-//           closed: 0,
-//           handover: 0,
-//           working: 0
-//         };
-
-//         userTickets.forEach(t => {
-//           if (counts[t.mainStatus]) counts[t.mainStatus]++;
-//         });
-
-//         return {
-//           userId: user._id,
-//           employeeName: user.name,
-//           projectName: "-", // Optional
-//           status: "-", // Not used for user summary
-//           ticketNo: "-", // Not used for user summary
-//           reportType: "User Summary",
-//           ...counts,
-//           total: userTickets.length
-//         };
-//       });
-
-//       return res.json(summary);
-//     }
-
-//     if (type === "employee") {
-//       // Group by employeeId
-//       const employees = await Employee.find();
-//       const summary = employees.map((emp) => {
-//         const empTickets = tickets.filter(t => t.employeeId === emp._id.toString());
-
-//         const counts = {
-//           open: 0,
-//           inProcess: 0,
-//           closed: 0,
-//           handover: 0,
-//           working: 0
-//         };
-
-//         empTickets.forEach(t => {
-//           if (counts[t.mainStatus]) counts[t.mainStatus]++;
-//         });
-
-//         return {
-//           employeeId: emp._id,
-//           employeeName: emp.name,
-//           projectName: "-", // Optional
-//           status: "-", // Not used for employee summary
-//           ticketNo: "-", // Not used for employee summary
-//           reportType: "Employee Summary",
-//           ...counts,
-//           total: empTickets.length
-//         };
-//       });
-
-//       return res.json(summary);
-//     }
-
-//     // Default: ticket-level report
-//     const formatted = tickets.map((t) => {
-//       const created = t.createdTime || "";
-//       const date = created.includes("T") ? created.split("T")[0] : created;
-
-//       return {
-//         date,
-//         employeeName: t.employee || "Unassigned",
-//         projectName: t.project || "N/A",
-//         status: t.mainStatus || "open",
-//         ticketNo: `#${t._id.toString().slice(-6)}`,
-//         reportType: "Ticket Report"
-//       };
-//     });
-
-//     res.json(formatted);
-//   } catch (err) {
-//     console.error("Report fetch error:", err);
-//     res.status(500).json({ error: "Failed to generate report." });
-//   }
-// };
 
 // GET /api/ticket/user/:userId
 exports.getTicketsByUserId = async (req, res) => {
@@ -571,25 +380,16 @@ exports.updateTicketNew = async (req, res) => {
       }
     }
 
-    // 2️⃣ Build base update
+    const cleanBody = {};
+    allowedFields.forEach((key) => {
+      if (req.body[key] !== undefined) {
+        cleanBody[key] = req.body[key];
+      }
+    });
+    
     const updateOps = {
       $set: {
-        name: req.body.name,
-        subject: req.body.subject,
-        projectId: req.body.projectId,
-        project: req.body.project,
-        departmentId: req.body.departmentId,
-        department: req.body.department,
-        categoryId: req.body.categoryId,
-        category: req.body.category,
-        priorityId: req.body.priorityId,
-        priority: req.body.priority,
-        employeeId: req.body.employeeId,
-        employee: req.body.employee,
-        issue: req.body.issue,
-        mainStatus: req.body.mainStatus,
-        targetDate: req.body.targetDate,
-        clientId: req.body.clientId,
+        ...cleanBody,
         updatedTime: new Date(),
       },
     };

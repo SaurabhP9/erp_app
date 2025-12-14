@@ -486,7 +486,6 @@ const E_Ticket = () => {
         ...prev,
         taskCategory: value,
       }));
-      console.log("data ", value, "name", name)
       return;
     }
 
@@ -782,7 +781,7 @@ const E_Ticket = () => {
       clientId: ticket.clientId || "",
       attachments: [],
       targetDate: dayjs(ticket.targetDate) || "",
-      taskCategory: ticket.taskCategory ?? "",
+      taskCategory: ticket.taskCategory || "",
     });
 
     // setIsTargetDatePresent(!!ticket.targetDate);
@@ -1092,7 +1091,7 @@ const E_Ticket = () => {
                         "Project",
                         "Issue",
                         "Submitted Time",
-                        "Target Date", // ✅ Added here
+                        "Target Date",
                         "Last Updated",
                         "Task Category",
                         "Assignee",
@@ -1392,7 +1391,7 @@ const E_Ticket = () => {
                   name="categoryId"
                   value={formData.categoryId || ""}
                   onChange={handleChange}
-                  disabled={lockAllFields || editMode} // 🔒 edit mode disabled
+                  disabled={lockAllFields || editMode} 
                 >
                   <MenuItem value="">Select</MenuItem>
                   {categories.map((cat) => (
