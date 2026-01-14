@@ -119,6 +119,7 @@ const Ticket = () => {
 
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState("");
+  const [showOlderThan5Days, setShowOlderThan5Days] = useState(false);
 
   const [isPublic, setIsPublic] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -149,6 +150,15 @@ const Ticket = () => {
   //   overflow: "hidden",
   //   textOverflow: "ellipsis",
   // };
+
+  const isOlderThanFiveDays = (createdTime) => {
+    if (!createdTime) return false;
+
+    const createdDate = dayjs(createdTime);
+    const today = dayjs();
+
+    return today.diff(createdDate, "day") > 5;
+  };
 
   const formatToIST = (dateString) => {
     const parsed = dayjs(dateString);
@@ -768,18 +778,39 @@ const Ticket = () => {
     return map;
   }, [status]);
 
+  // const filteredTickets = tickets
+  //   .filter((t) => {
+  //     const statusMatch =
+  //       !statusQuery || t.mainStatus?.toLowerCase().includes(statusQuery);
+
+  //     // For employee view: match if ticket created by them OR assigned to them
+  //     const employeeMatch =
+  //       !employeeIdQuery ||
+  //       t.userId == employeeIdQuery ||
+  //       t.employeeId == employeeIdQuery;
+
+  //     // For client view: match ticket created by client only
+  //     const clientMatch = !userIdQuery || t.userId == userIdQuery;
+
+  //     return statusMatch && (employeeIdQuery ? employeeMatch : clientMatch);
+  //   })
+  //   .filter(applyFilters)
+  //   .filter((ticket) =>
+  //     Object.values(ticket).some((val) =>
+  //       String(val).toLowerCase().includes(searchTerm.toLowerCase())
+  //     )
+  //   )
+  //   .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
   const filteredTickets = tickets
     .filter((t) => {
       const statusMatch =
         !statusQuery || t.mainStatus?.toLowerCase().includes(statusQuery);
 
-      // For employee view: match if ticket created by them OR assigned to them
       const employeeMatch =
         !employeeIdQuery ||
         t.userId == employeeIdQuery ||
         t.employeeId == employeeIdQuery;
 
-      // For client view: match ticket created by client only
       const clientMatch = !userIdQuery || t.userId == userIdQuery;
 
       return statusMatch && (employeeIdQuery ? employeeMatch : clientMatch);
@@ -790,6 +821,21 @@ const Ticket = () => {
         String(val).toLowerCase().includes(searchTerm.toLowerCase())
       )
     )
+    // ✅ UPDATED CONDITION
+    .filter((ticket) => {
+      if (!showOlderThan5Days) return true;
+
+      const isOlderThan5 = dayjs().diff(dayjs(ticket.createdTime), "day") > 5;
+
+      const status = ticket.mainStatus?.toLowerCase();
+
+      return (
+        isOlderThan5 &&
+        status !== "closed" &&
+        status !== "handover" &&
+        ticket.project !== "Click ERP PVT LTD"
+      );
+    })
     .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
 
   return (
@@ -904,6 +950,18 @@ const Ticket = () => {
                   List of Tickets
                 </Typography>
               </Stack>
+              {/* <Stack direction="row" spacing={2}>
+                <TextField
+                  size="small"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Button variant="contained" onClick={() => setShowForm(true)}>
+                  Add Ticket
+                </Button>
+              </Stack> */}
+
               <Stack direction="row" spacing={2}>
                 <TextField
                   size="small"
@@ -911,6 +969,15 @@ const Ticket = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+
+                <Button
+                  variant={showOlderThan5Days ? "contained" : "outlined"}
+                  color="error"
+                  onClick={() => setShowOlderThan5Days((prev) => !prev)}
+                >
+                  {showOlderThan5Days ? "Show All Tickets" : "Tickets > 5 Days"}
+                </Button>
+
                 <Button variant="contained" onClick={() => setShowForm(true)}>
                   Add Ticket
                 </Button>
