@@ -14,6 +14,7 @@ const TABS = {
     { name: "HOME", path: "/employee/e_home" },
     { name: "TICKET", path: "/employee/my-tickets" },
     { name: "TIMESHEET", path: "/employee/my-timesheet" },
+    { name: "REPORT", path: "/employee/my-report" },
   ],
   client: [
     { name: "HOME", path: "/client/e_home" },

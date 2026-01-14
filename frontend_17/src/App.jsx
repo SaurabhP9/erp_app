@@ -27,6 +27,7 @@ import PriorityForm from "./pages/masters/PriorityForm";
 import MyTickets from "./pages/employee/MyTickets";
 import MyTimesheet from "./pages/employee/MyTimesheet";
 import E_home from "./pages/employee/E_home";
+import MyReport from "./pages/employee/MyReport";
 
 // Client Pages
 import ClientHome from "./pages/client/ClientHome";
@@ -371,6 +372,18 @@ function App() {
                 allowedRoles={["employee"]}
               >
                 <MyTimesheet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/my-report"
+            element={
+              <ProtectedRoute
+                isAuthenticated={isAuthenticated}
+                role={role}
+                allowedRoles={["employee"]}
+              >
+                <MyReport />
               </ProtectedRoute>
             }
           />
